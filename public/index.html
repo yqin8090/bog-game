@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BoG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>BoG</h1>
+
+    <section id="home">
+      <input id="name" placeholder="Your name" maxlength="20">
+      <button id="create">Make a room</button>
+      <div class="row">
+        <input id="code" placeholder="Room code" maxlength="4">
+        <button id="join">Join</button>
+      </div>
+      <p id="error" class="error"></p>
+    </section>
+
+    <section id="lobby" hidden>
+      <p>Room code: <strong id="room-code"></strong></p>
+      <p class="hint">Send this code to your friends so they can join.</p>
+      <ul id="players"></ul>
+      <button id="start" hidden>Start game</button>
+      <p id="waiting" class="hint"></p>
+    </section>
+
+    <section id="game" hidden>
+      <p>The game has started! (The BoG rules are coming soon.)</p>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
