@@ -6,14 +6,17 @@ const path = require("path");
 const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
+const Game = require("./game");
+const { LEADERS, CHAMPIONS, UTILITIES } = require("./cards");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
+app.get("/cards.json", (req, res) => res.json({ LEADERS, CHAMPIONS, UTILITIES }));
 
-const MAX_PLAYERS = 6;
+const MAX_PLAYERS = 2; // BoG is one versus one
 
 // All open rooms, keyed by their join code (like "KQZD").
 const rooms = new Map();
@@ -39,6 +42,13 @@ function publicRoom(room) {
 
 function sendRoom(room) {
   io.to(room.code).emit("room", publicRoom(room));
+}
+
+// Each player gets their own view of the game, so nobody sees the other's hand.
+function sendGame(room) {
+  if (!room.game) return;
+  for (const p of room.players) io.to(p.id).emit("game", Game.viewFor(room.game, p.id));
+  room.game.events = [];
 }
 
 io.on("connection", (socket) => {
@@ -75,14 +85,41 @@ io.on("connection", (socket) => {
   socket.on("startGame", () => {
     const room = currentRoom;
     if (!room || room.hostId !== socket.id || room.players.length < 2) return;
+    if (room.game && room.game.phase !== "over") return;
     room.started = true;
-    // The real BoG rules will plug in here.
+    room.game = Game.createGame(room.players);
     sendRoom(room);
+    sendGame(room);
   });
+
+  // Every game move goes through here. If the move isn't allowed, the player gets the reason.
+  function gameAction(name, run) {
+    socket.on(name, (data, reply = () => {}) => {
+      const room = currentRoom;
+      if (!room || !room.game) return reply({ error: "No game running." });
+      room.game.events = [];
+      const error = run(room.game, data || {});
+      if (error) return reply({ error });
+      reply({});
+      sendGame(room);
+    });
+  }
+
+  gameAction("chooseLineup", (game, d) => Game.chooseLineup(game, socket.id, d.lineup));
+  gameAction("useAbility", (game, d) => Game.useAbility(game, socket.id, d.slot, d.index, d.target));
+  gameAction("playCard", (game, d) => Game.playCard(game, socket.id, d.handIndex, d.target));
+  gameAction("endTurn", (game) => Game.endTurn(game, socket.id));
 
   socket.on("disconnect", () => {
     const room = currentRoom;
     if (!room) return;
+    if (room.game) {
+      Game.forfeit(room.game, socket.id);
+      room.players = room.players.filter((p) => p.id !== socket.id);
+      sendGame(room);
+      room.game = null;
+      room.started = false;
+    }
     room.players = room.players.filter((p) => p.id !== socket.id);
     if (room.players.length === 0) {
       rooms.delete(room.code);

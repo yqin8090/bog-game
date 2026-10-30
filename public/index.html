@@ -28,9 +28,53 @@
       <p id="waiting" class="hint"></p>
     </section>
 
-    <section id="game" hidden>
-      <p>The game has started! (The BoG rules are coming soon.)</p>
+    <section id="setup" hidden>
+      <h2>Pick your team</h2>
+      <p class="hint">Click a champion, then click a stronghold to put them there. Your leader goes at the back: they can't be attacked until a front stronghold falls, and their leader ability is active.</p>
+      <div id="offered" class="cards"></div>
+      <div class="lineup">
+        <div class="pick-slot" data-slot="left"><span>Left stronghold</span></div>
+        <div class="pick-slot" data-slot="right"><span>Right stronghold</span></div>
+        <div class="pick-slot leader" data-slot="back"><span>👑 Leader (back)</span></div>
+      </div>
+      <button id="ready" disabled>Ready!</button>
+      <p id="setup-wait" class="hint"></p>
     </section>
+
+    <section id="game" hidden>
+      <div class="status">
+        <div id="opp-info"></div>
+        <div id="turn-banner"></div>
+      </div>
+      <div class="board">
+        <div class="side enemy">
+          <div class="row-back" data-row="opp-back"></div>
+          <div class="row-front" data-row="opp-front"></div>
+        </div>
+        <div class="divider"></div>
+        <div class="side mine">
+          <div class="row-front" data-row="my-front"></div>
+          <div class="row-back" data-row="my-back"></div>
+        </div>
+      </div>
+      <div id="action" class="action"></div>
+      <div class="controls">
+        <div id="energy"></div>
+        <button id="end-turn">End turn</button>
+      </div>
+      <div id="hand" class="hand"></div>
+      <p id="game-error" class="error"></p>
+      <ul id="log" class="log"></ul>
+    </section>
+
+    <div id="over" class="overlay" hidden>
+      <div class="overlay-box">
+        <h2 id="over-title"></h2>
+        <p id="over-text" class="hint"></p>
+        <button id="again">Play again</button>
+        <button id="to-lobby" class="secondary">Back to room</button>
+      </div>
+    </div>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
