@@ -39,17 +39,17 @@ const CardView = (() => {
         ${cooldownHtml(a.cooldown)}
         <div class="tcg-atk-main">
           <div class="tcg-atk-line"><b>${esc(a.name)}</b><span class="tcg-dmg">${esc(damageText(a.effect))}</span></div>
-          <div class="tcg-atk-desc">${esc(a.desc)}</div>
+          <div class="tcg-atk-desc">${esc(a.short || a.desc)}</div>
         </div>
       </div>`;
   }
 
   function powerHtml(a, spent) {
-    return `<div class="tcg-band power${spent ? " spent" : ""}"><b>POWER · ${esc(a.name)}</b><em>${esc(a.desc)}</em></div>`;
+    return `<div class="tcg-band power${spent ? " spent" : ""}"><b>POWER · ${esc(a.name)}</b> <em>${esc(a.short || a.desc)}</em></div>`;
   }
 
   function passiveHtml(p) {
-    return `<div class="tcg-band passive"><b>PASSIVE · ${esc(p.name)}</b><em>${esc(p.desc)}</em></div>`;
+    return `<div class="tcg-band passive"><b>PASSIVE · ${esc(p.name)}</b> <em>${esc(p.short || p.desc)}</em></div>`;
   }
 
   // Small pills on the art: shield, dodge chance, marks and bleeding.
@@ -99,6 +99,11 @@ const CardView = (() => {
 
     el.innerHTML = `
       <div class="tcg-inner">
+        <div class="tcg-art">
+          ${image ? `<img src="${esc(image)}" alt="" draggable="false">` : `<span class="tcg-emoji">${esc(c.art)}</span>`}
+          ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
+          <div class="tcg-foil"></div>
+        </div>
         <div class="tcg-top">
           <div class="tcg-names">
             <span class="tcg-stage">${esc(defs.CLASSES[c.class] || "")}</span>
@@ -108,17 +113,11 @@ const CardView = (() => {
           <span class="tcg-orb">${type.icon}</span>
         </div>
         <div class="tcg-hpbar"><div style="width:${Math.min(100, (hp / maxHp) * 100)}%"></div></div>
-        <div class="tcg-art">
-          ${image ? `<img src="${esc(image)}" alt="" draggable="false">` : `<span class="tcg-emoji">${esc(c.art)}</span>`}
-          ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
-          <div class="tcg-foil"></div>
-        </div>
-        <div class="tcg-sub">${esc(c.title)}</div>
         <div class="tcg-body">
           ${attacks.map(attackHtml).join("")}
           ${power ? powerHtml(power, formOn) : ""}
           ${c.passive ? passiveHtml(c.passive) : ""}
-          <div class="tcg-leader${leaderActive ? " active" : ""}"><span>👑</span> <b>${esc(leader.name)}</b> <em>${esc(leader.desc)}</em></div>
+          <div class="tcg-leader${leaderActive ? " active" : ""}"><span>👑</span> <b>${esc(leader.name)}</b> <em>${esc(leader.short || leader.desc)}</em></div>
         </div>
         ${down ? `<div class="tcg-fallen">FALLEN</div>` : ""}
       </div>`;

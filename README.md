@@ -29,5 +29,7 @@ A one-versus-one card game you play with friends in the browser.
 - `server.js` runs the game online and keeps track of rooms.
 - `public/card-view.js` draws each champion as a trading card. Each champion's `type` sets its colors.
 - `public/cards-preview.html` shows every card at full size. Open http://localhost:3000/cards-preview.html.
-- `public/cards/` holds card pictures. A picture works best at 600 x 360 pixels, for example
-  `public/cards/sam-card.jpg`, and goes in the champion's `image` line in `cards.js`.
+- `public/cards/` holds card pictures. A picture works best at 600 x 533 pixels (9 wide to 8 tall, so a whole
+  body fits), for example `public/cards/sam-card.jpg`, and goes in the champion's `image` line in `cards.js`.
+- Each ability, passive and leader can have a `short` line in `cards.js`. That one line is printed on the card.
+  The full `desc` shows in the tooltip.

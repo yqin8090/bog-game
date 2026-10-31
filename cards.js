@@ -10,6 +10,7 @@
 //   art          - an emoji shown as the picture when there's no image
 //   image        - optional: a picture in public/cards/, about 600x360 pixels, like "sam-card.jpg"
 //   abilities    - what it can do. Each champion can use one ability per turn.
+//   short        - optional one-line text shown on the card; desc goes in the tooltip
 //   power        - an ability marked power: true is shown as a POWER band, not an attack
 //   passive      - optional: always-on powers, with a name and a description
 //   form         - optional: a transformation (like Ruhaan turning into Simba)
@@ -49,13 +50,13 @@ const CLASSES = {
 };
 
 const LEADERS = {
-  rally: { name: "Rally", desc: "All your champions deal +1 damage." },
-  bulwark: { name: "Bulwark", desc: "Your front champions take 1 less damage from each hit." },
-  fortify: { name: "Fortify", desc: "At the start of your turn, heal your front champions 1." },
-  thorns: { name: "Thorns", desc: "When an enemy champion hits your front champion, it takes 1 damage back." },
-  haste: { name: "Haste", desc: "Your cooldowns go down 1 extra at the start of your turn." },
-  scholar: { name: "Scholar", desc: "Draw an extra utility card every turn." },
-  lifeline: { name: "Lifeline", desc: "At the start of your turn, this leader heals 2." },
+  rally: { name: "Rally", short: "All champions +1 damage", desc: "All your champions deal +1 damage." },
+  bulwark: { name: "Bulwark", short: "Fronts take 1 less damage", desc: "Your front champions take 1 less damage from each hit." },
+  fortify: { name: "Fortify", short: "Fronts heal 1 each turn", desc: "At the start of your turn, heal your front champions 1." },
+  thorns: { name: "Thorns", short: "Attackers take 1 back", desc: "When an enemy champion hits your front champion, it takes 1 damage back." },
+  haste: { name: "Haste", short: "Cooldowns drop 1 extra", desc: "Your cooldowns go down 1 extra at the start of your turn." },
+  scholar: { name: "Scholar", short: "Draw an extra utility", desc: "Draw an extra utility card every turn." },
+  lifeline: { name: "Lifeline", short: "Leader heals 2 each turn", desc: "At the start of your turn, this leader heals 2." },
 };
 
 const CHAMPIONS = {
@@ -64,17 +65,17 @@ const CHAMPIONS = {
     name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", type: "lightning", rarity: "holo", hp: 10, art: "🐾",
     image: "cards/ruhaan-card.jpg",
     abilities: [
-      { name: "Neuro Scan", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
-      { name: "Paw Swipe", cooldown: 1, target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
+      { name: "Neuro Scan", short: "Next hit deals double", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
+      { name: "Paw Swipe", short: "2 damage, +1 Swift", cooldown: 1, target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
       {
-        name: "Simba Form", power: true, once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
+        name: "Simba Form", short: "+10 HP, 2x dodge", power: true, once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
         desc: "Turn into Simba! +10 max HP and HP, Swift dodge is doubled (up to 60%), Paw Swipe becomes Wolf Claws. Needs under half HP, after 4 turns.",
       },
     ],
     form: {
       name: "Simba Form", image: "cards/ruhaan-form-card.jpg", bonusHp: 10, swiftMultiplier: 2,
       replace: {
-        1: { name: "Wolf Claws", cooldown: 1, target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
+        1: { name: "Wolf Claws", short: "4 damage + bleed", cooldown: 1, target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
       },
     },
     leader: "rally",
@@ -83,12 +84,12 @@ const CHAMPIONS = {
     name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", type: "darkness", rarity: "holo", hp: 10, art: "💀",
     image: "cards/abbas-card.jpg",
     passive: {
-      name: "Reaper's Hunger", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
+      name: "Reaper's Hunger", short: "Heals half of damage", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
       desc: "Heals 50% of damage he deals, and can heal past max HP. Takes 1.5x damage from the enemy leader.",
     },
     abilities: [
-      { name: "Scythe Slice", cooldown: 2, target: "enemyFront", effect: { damage: 4 }, desc: "Swing across the board: 4 damage to both enemy front champions." },
-      { name: "Soul Link", cooldown: 3, target: "anyEnemy", effect: { soulLink: 2 }, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
+      { name: "Scythe Slice", short: "4 to both enemy fronts", cooldown: 2, target: "enemyFront", effect: { damage: 4 }, desc: "Swing across the board: 4 damage to both enemy front champions." },
+      { name: "Soul Link", short: "Guess a side to link", cooldown: 3, target: "anyEnemy", effect: { soulLink: 2 }, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
     ],
     leader: "thorns",
   },
@@ -98,7 +99,7 @@ const CHAMPIONS = {
     name: "Blaze", title: "The Firestarter", class: "ranger", type: "fire", rarity: "common", hp: 12, art: "🔥",
     abilities: [
       { name: "Fireball", cooldown: 1, target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
-      { name: "Inferno", cooldown: 2, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
+      { name: "Inferno", short: "2 damage to each enemy", cooldown: 2, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
     ],
     leader: "rally",
   },
@@ -129,7 +130,7 @@ const CHAMPIONS = {
   spark: {
     name: "Spark", title: "The Storm", class: "ranger", type: "lightning", rarity: "common", hp: 12, art: "⚡",
     abilities: [
-      { name: "Chain Lightning", cooldown: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
+      { name: "Chain Lightning", short: "3 damage to each enemy", cooldown: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
       { name: "Static", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "haste",
