@@ -7,11 +7,13 @@ A one-versus-one card game you play with friends in the browser.
 - Each player has three strongholds: two at the front and one at the back (the main stronghold).
 - At the start you're offered 4 champions. Pick 3 and place one at each stronghold.
   The champion at the back is your **leader**: their leader ability is active while they stand.
-- On your turn you get 3 energy. Each champion can use one ability per turn, and you can
-  play utility cards from your hand (heals, shields, bombs...). You draw a card every turn.
+- On your turn, each champion can use one ability. Strong abilities have a cooldown: you have
+  to wait that many of your turns before using them again.
+- You can also play one utility card per turn (heals, shields, bombs...). You draw a card every turn.
 - Attacks hit the enemy's front champions. When a champion's HP hits 0, that stronghold falls.
 - The back champion can attack, but can't be attacked until one of its front strongholds has fallen.
 - Knock out the enemy leader at the main stronghold to win!
+- From turn 21, sudden death: champions take damage at the start of each turn, so games always end.
 
 ## Play it on your computer
 

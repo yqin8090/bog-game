@@ -7,14 +7,14 @@ const http = require("http");
 const express = require("express");
 const { Server } = require("socket.io");
 const Game = require("./game");
-const { LEADERS, CHAMPIONS, UTILITIES } = require("./cards");
+const { CLASSES, LEADERS, CHAMPIONS, UTILITIES } = require("./cards");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
-app.get("/cards.json", (req, res) => res.json({ LEADERS, CHAMPIONS, UTILITIES }));
+app.get("/cards.json", (req, res) => res.json({ CLASSES, LEADERS, CHAMPIONS, UTILITIES }));
 
 const MAX_PLAYERS = 2; // BoG is one versus one
 
@@ -106,7 +106,8 @@ io.on("connection", (socket) => {
   }
 
   gameAction("chooseLineup", (game, d) => Game.chooseLineup(game, socket.id, d.lineup));
-  gameAction("useAbility", (game, d) => Game.useAbility(game, socket.id, d.slot, d.index, d.target));
+  gameAction("useAbility", (game, d) => Game.useAbility(game, socket.id, d.slot, d.index, d.target, d.choice));
+  gameAction("guessLink", (game, d) => Game.guessLink(game, socket.id, d.side));
   gameAction("playCard", (game, d) => Game.playCard(game, socket.id, d.handIndex, d.target));
   gameAction("endTurn", (game) => Game.endTurn(game, socket.id));
 

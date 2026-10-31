@@ -26,20 +26,39 @@ button.secondary { background: #3a3f55; color: var(--text); }
 .card {
   --card: #555;
   position: relative; width: 150px; border-radius: 12px; padding: 8px;
-  background: linear-gradient(180deg, var(--card) 0 38%, #262a3a 38%);
+  background: linear-gradient(180deg, var(--card) 0 120px, #262a3a 120px);
   border: 2px solid #3a3f55; cursor: pointer; user-select: none;
   transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
   font-size: 12px;
 }
 .card:hover { transform: translateY(-3px); }
-.card-art { height: 64px; display: grid; place-items: center; font-size: 44px; }
-.card-art img { width: 100%; height: 64px; object-fit: cover; border-radius: 8px; }
+.card-art { height: 120px; display: grid; place-items: center; font-size: 56px; border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, 0.15); }
+.card-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
 .card-name { font-weight: 800; font-size: 15px; margin-top: 4px; }
 .card-title { color: var(--muted); font-size: 11px; margin-bottom: 6px; }
 .hp { position: relative; height: 18px; background: #11131b; border-radius: 9px; overflow: hidden; }
 .hp-fill { height: 100%; background: linear-gradient(90deg, #2dc653, #80ed99); transition: width 0.4s; }
 .hp span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; text-shadow: 0 1px 2px #000; }
-.shield { position: absolute; top: 6px; right: 6px; background: #0077b6; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+.badges { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+.badges span { background: #0077b6; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: 10px; }
+.badges span.bad { background: #9d0208; }
+.hp-over { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, #ffd166, #fca311); opacity: 0.85; }
+.passive { margin-top: 6px; color: #c8b6ff; }
+.abilities i { color: var(--muted); font-style: normal; }
+.card.transformed { box-shadow: 0 0 14px #4cc9f0; border-color: #4cc9f0; }
+.card.glow-in { animation: glowin 1s; }
+@keyframes glowin { from { box-shadow: 0 0 40px 10px #fff; } }
+button.ability { display: grid; text-align: left; gap: 2px; max-width: 260px; }
+button.ability small { font-weight: 600; opacity: 0.75; }
+button.ability span { font-weight: 400; font-size: 12px; }
+.action .hint { flex-basis: 100%; }
+.row-front { position: relative; }
+.slash { position: absolute; left: -5%; top: 45%; width: 110%; height: 16px; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(90deg, transparent, #e0d4ff 40%, #fff 50%, #e0d4ff 60%, transparent);
+  box-shadow: 0 0 20px #b197fc; transform: rotate(-8deg) scaleX(0); transform-origin: left; animation: slash 0.7s ease-out forwards; }
+@keyframes slash { 60% { transform: rotate(-8deg) scaleX(1); opacity: 1; } to { transform: rotate(-8deg) scaleX(1); opacity: 0; } }
+#link .row { justify-content: center; }
+#link .row button { flex: 1; font-size: 20px; padding: 14px; }
 .abilities { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 3px; color: #d6d8e2; }
 .leader-line { margin-top: 6px; padding-top: 6px; border-top: 1px solid #3a3f55; color: var(--muted); }
 .leader-line.active { color: var(--accent); }
@@ -78,7 +97,7 @@ button.secondary { background: #3a3f55; color: var(--text); }
 #energy { font-size: 18px; }
 .hand { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; }
 .card.utility { flex: 0 0 110px; width: 110px; background: linear-gradient(180deg, #4361ee 0 40%, #262a3a 40%); }
-.card.utility .card-art { height: 48px; font-size: 34px; }
+.card.utility .card-art { height: 48px; font-size: 34px; background: none; }
 .card.utility.cant { opacity: 0.5; }
 .cost { position: absolute; top: 6px; left: 6px; background: #11131b; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
 .card-desc { color: #d6d8e2; margin-top: 4px; }
@@ -93,7 +112,9 @@ button.secondary { background: #3a3f55; color: var(--text); }
 @media (max-width: 520px) {
   .card { width: 108px; font-size: 10px; padding: 6px; }
   .card .abilities { display: none; }
-  .card-art { height: 44px; font-size: 32px; }
+  .card-art { height: 84px; font-size: 40px; }
+  .card { background: linear-gradient(180deg, var(--card) 0 84px, #262a3a 84px); }
+  .badges span { font-size: 9px; }
   .card-name { font-size: 13px; }
   .row-front, .row-back { gap: 8px; }
 }

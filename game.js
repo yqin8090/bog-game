@@ -2,14 +2,21 @@
 // functions when players do things. Each action returns an error message
 // (a string) if it isn't allowed, or nothing if it worked.
 
-const { LEADERS, CHAMPIONS, UTILITIES } = require("./cards");
+const { CHAMPIONS, UTILITIES } = require("./cards");
 
 const SLOTS = ["left", "right", "back"];
+const FRONT = ["left", "right"];
 const SLOT_NAMES = { left: "left stronghold", right: "right stronghold", back: "main stronghold" };
-const ENERGY_PER_TURN = 3;
 const STARTING_HAND = 3;
 const MAX_HAND = 7;
 const CHAMPIONS_OFFERED = 4;
+const MAX_SWIFT = 3;
+const BLEED_TURNS = 3;
+const MAX_SHIELD = 6;
+const SUDDEN_DEATH_TURN = 21; // so games can't go on forever
+
+// Fractions like 1.5x damage can make HP like 7.5, so keep one decimal place.
+const round = (n) => Math.round(n * 10) / 10;
 
 function shuffle(list) {
   const a = [...list];
@@ -37,6 +44,7 @@ function createGame(players) {
     players: {},
     turn: null,
     turnNumber: 0,
+    pending: null, // a Soul Link guess waiting for an answer
     winner: null,
     log: [],
     events: [],
@@ -49,7 +57,8 @@ function createGame(players) {
       slots: null, // { left, right, back } once chosen
       hand: [],
       deck: buildDeck(),
-      energy: 0,
+      turnsTaken: 0,
+      cardPlayed: false,
     };
   });
   return game;
@@ -61,12 +70,26 @@ function opponentOf(game, pid) {
 
 function log(game, text) {
   game.log.push(text);
-  if (game.log.length > 50) game.log.shift();
+  if (game.log.length > 60) game.log.shift();
+}
+
+function champName(champ) {
+  return champ.form ? CHAMPIONS[champ.card].form.name : CHAMPIONS[champ.card].name;
 }
 
 function leaderOf(game, pid) {
   const back = game.players[pid].slots.back;
   return back.hp > 0 ? CHAMPIONS[back.card].leader : null;
+}
+
+function passiveOf(champ) {
+  return CHAMPIONS[champ.card].passive || {};
+}
+
+// A champion's abilities right now (a transformation can swap some out).
+function abilitiesOf(champ) {
+  const def = CHAMPIONS[champ.card];
+  return def.abilities.map((a, i) => (champ.form && def.form.replace[i]) || a);
 }
 
 function alive(game, pid, slot) {
@@ -76,7 +99,7 @@ function alive(game, pid, slot) {
 
 // Which enemy slots can be attacked right now.
 function attackableSlots(game, targetPid) {
-  const front = ["left", "right"].filter((s) => alive(game, targetPid, s));
+  const front = FRONT.filter((s) => alive(game, targetPid, s));
   return front.length < 2 ? [...front, "back"] : front;
 }
 
@@ -100,8 +123,12 @@ function chooseLineup(game, pid, lineup) {
   }
   p.slots = {};
   for (const s of SLOTS) {
-    const hp = CHAMPIONS[lineup[s]].hp;
-    p.slots[s] = { card: lineup[s], hp, maxHp: hp, shield: 0, acted: false };
+    const def = CHAMPIONS[lineup[s]];
+    p.slots[s] = {
+      card: lineup[s], hp: def.hp, maxHp: def.hp, shield: 0, acted: false,
+      cooldowns: def.abilities.map(() => 0), used: [], swift: 0, form: false,
+      marked: false, bleeds: [], link: null,
+    };
   }
   if (game.order.every((id) => game.players[id].slots)) startPlaying(game);
 }
@@ -118,68 +145,134 @@ function startTurn(game, pid) {
   game.turn = pid;
   game.turnNumber++;
   const p = game.players[pid];
+  const enemy = opponentOf(game, pid);
   const leader = leaderOf(game, pid);
-  const firstTurn = game.turnNumber === 1;
+  p.turnsTaken++;
+  p.cardPlayed = false;
 
-  // The player who goes first gets a little less on turn 1 to keep it fair.
-  p.energy = (firstTurn ? ENERGY_PER_TURN - 1 : ENERGY_PER_TURN) + (leader === "inspire" ? 1 : 0);
-  if (!firstTurn) drawCards(game, pid, 1 + (leader === "scholar" ? 1 : 0));
-  for (const s of SLOTS) p.slots[s].acted = false;
+  // The player who goes first doesn't draw on turn 1, to keep it fair.
+  if (game.turnNumber > 1) drawCards(game, pid, 1 + (leader === "scholar" ? 1 : 0));
 
-  if (leader === "fortify") {
-    for (const s of ["left", "right"]) heal(game, pid, s, 1);
+  for (const s of SLOTS) {
+    const c = p.slots[s];
+    c.acted = false;
+    const tick = 1 + (leader === "haste" ? 1 : 0);
+    c.cooldowns = c.cooldowns.map((cd) => Math.max(0, cd - tick));
   }
+
+  // Bleeding champions lose HP at the start of their own turn.
+  for (const s of SLOTS) {
+    const c = p.slots[s];
+    if (c.hp <= 0) continue;
+    for (const b of c.bleeds) {
+      if (game.phase === "playing") damage(game, enemy, pid, s, b.amount, { direct: true, reason: "bleed" });
+      b.turns--;
+    }
+    c.bleeds = c.bleeds.filter((b) => b.turns > 0);
+  }
+
+  // Soul Links hurt the linked enemy at the start of the linker's turn.
+  for (const s of SLOTS) {
+    const c = p.slots[s];
+    if (!c.link || game.phase !== "playing") continue;
+    if (c.hp <= 0 || !alive(game, enemy, c.link)) {
+      c.link = null;
+      continue;
+    }
+    damage(game, pid, enemy, c.link, c.linkDamage, { from: s, direct: true, reason: "link" });
+  }
+
+  // Sudden death: long games start hurting everyone, a bit more every 10 turns.
+  if (game.turnNumber >= SUDDEN_DEATH_TURN) {
+    if (game.turnNumber === SUDDEN_DEATH_TURN) log(game, "⏳ Sudden death! Champions now take damage at the start of each turn.");
+    const hurt = Math.floor((game.turnNumber - SUDDEN_DEATH_TURN) / 10) + 1;
+    for (const s of SLOTS) {
+      if (game.phase === "playing" && alive(game, pid, s)) damage(game, enemy, pid, s, hurt, { direct: true, reason: "storm" });
+    }
+  }
+
+  if (game.phase !== "playing") return;
+  if (leader === "fortify") for (const s of FRONT) heal(game, pid, s, 1);
   if (leader === "lifeline") heal(game, pid, "back", 2);
 }
 
 // --- Effects ---
 
-function heal(game, pid, slot, amount) {
+function heal(game, pid, slot, amount, overheal = false) {
   const c = game.players[pid].slots[slot];
-  if (c.hp <= 0) return;
-  const healed = Math.min(amount, c.maxHp - c.hp);
-  c.hp += healed;
-  if (healed > 0) game.events.push({ type: "heal", owner: pid, slot, amount: healed });
+  if (c.hp <= 0 || amount <= 0) return;
+  const healed = round(overheal ? amount : Math.min(amount, c.maxHp - c.hp));
+  if (healed <= 0) return;
+  c.hp = round(c.hp + healed);
+  game.events.push({ type: "heal", owner: pid, slot, amount: healed });
 }
 
-// Deal damage to a champion. "from" is the attacking champion's slot, if a champion attacked.
-function damage(game, attackerPid, targetPid, slot, amount, from) {
+// Deal damage to a champion.
+//   from:   the attacking champion's slot (if a champion did it)
+//   direct: bleed and Soul Link damage skip bonuses, dodging and shields' thorns
+function damage(game, attackerPid, targetPid, slot, amount, { from = null, direct = false, reason = null } = {}) {
   const target = game.players[targetPid].slots[slot];
-  if (target.hp <= 0) return;
+  if (target.hp <= 0) return 0;
+  const attacker = from ? game.players[attackerPid].slots[from] : null;
   const isFront = slot !== "back";
-  if (from && leaderOf(game, attackerPid) === "rally") amount += 1;
-  if (isFront && leaderOf(game, targetPid) === "bulwark") amount = Math.max(0, amount - 1);
+
+  if (!direct) {
+    const dodge = target.swift * 0.1 * (target.form ? CHAMPIONS[target.card].form.swiftMultiplier : 1);
+    if (dodge > 0 && Math.random() < dodge) {
+      game.events.push({ type: "dodge", owner: targetPid, slot });
+      log(game, `💨 ${champName(target)} dodged!`);
+      return 0;
+    }
+    if (from && leaderOf(game, attackerPid) === "rally") amount += 1;
+    if (target.marked) {
+      amount *= 2;
+      target.marked = false;
+      log(game, `🎯 Weak spot! Double damage on ${champName(target)}.`);
+    }
+    if (from === "back" && passiveOf(target).leaderWeakness) amount *= passiveOf(target).leaderWeakness;
+    if (isFront && leaderOf(game, targetPid) === "bulwark") amount = Math.max(0, amount - 1);
+  }
+  amount = round(amount);
 
   const blocked = Math.min(target.shield, amount);
-  target.shield -= blocked;
-  const dealt = amount - blocked;
-  target.hp = Math.max(0, target.hp - dealt);
-  game.events.push({ type: "damage", owner: targetPid, slot, amount: dealt, blocked });
+  target.shield = round(target.shield - blocked);
+  const dealt = round(amount - blocked);
+  target.hp = round(Math.max(0, target.hp - dealt));
+  game.events.push({ type: "damage", owner: targetPid, slot, amount: dealt, blocked, reason });
 
   if (target.hp === 0) {
+    target.link = null;
     const name = game.players[targetPid].name;
-    log(game, `💥 ${CHAMPIONS[target.card].name} is knocked out! ${name}'s ${SLOT_NAMES[slot]} has fallen.`);
+    log(game, `💥 ${champName(target)} is knocked out! ${name}'s ${SLOT_NAMES[slot]} has fallen.`);
     if (slot === "back") {
       game.phase = "over";
       game.winner = attackerPid;
+      game.pending = null;
       log(game, `🏆 ${game.players[attackerPid].name} wins!`);
-      return;
+      return dealt;
     }
   }
 
-  if (from && isFront && leaderOf(game, targetPid) === "thorns" && alive(game, attackerPid, from)) {
-    damage(game, targetPid, attackerPid, from, 1, null);
+  // Abbas's passive: heal from damage dealt, even past max HP.
+  if (attacker && attacker.hp > 0 && passiveOf(attacker).lifesteal) {
+    heal(game, attackerPid, from, dealt * passiveOf(attacker).lifesteal, passiveOf(attacker).overheal);
   }
+
+  if (!direct && from && isFront && leaderOf(game, targetPid) === "thorns" && alive(game, attackerPid, from)) {
+    damage(game, targetPid, attackerPid, from, 1, { direct: true, reason: "thorns" });
+  }
+  return dealt;
 }
 
-// Runs an ability or utility card's effect. Returns an error if the target is wrong.
 function checkTarget(game, pid, targetType, target) {
   if (target && !SLOTS.includes(target.slot)) return "Unknown stronghold.";
+  const enemy = opponentOf(game, pid);
   if (targetType === "enemy") {
-    const enemy = opponentOf(game, pid);
     if (!target || target.owner !== enemy || !attackableSlots(game, enemy).includes(target.slot) || !alive(game, enemy, target.slot)) {
       return "Pick an enemy champion you can attack.";
     }
+  } else if (targetType === "anyEnemy") {
+    if (!target || target.owner !== enemy || !alive(game, enemy, target.slot)) return "Pick an enemy champion.";
   } else if (targetType === "ally") {
     if (!target || target.owner !== pid || !alive(game, pid, target.slot)) return "Pick one of your champions.";
   }
@@ -188,22 +281,66 @@ function checkTarget(game, pid, targetType, target) {
 function applyEffect(game, pid, effect, targetType, target, from) {
   const enemy = opponentOf(game, pid);
   const p = game.players[pid];
+  const self = from ? p.slots[from] : null;
+
   if (effect.damage) {
-    const slots = targetType === "allEnemies" ? attackableSlots(game, enemy) : [target.slot];
-    for (const s of slots) if (game.phase === "playing") damage(game, pid, enemy, s, effect.damage, from);
+    let slots = [target && target.slot];
+    if (targetType === "allEnemies") slots = attackableSlots(game, enemy);
+    if (targetType === "enemyFront") {
+      slots = FRONT.filter((s) => alive(game, enemy, s));
+      game.events.push({ type: "slash", owner: enemy });
+    }
+    for (const s of slots) {
+      if (game.phase !== "playing") break;
+      const dealt = damage(game, pid, enemy, s, effect.damage, { from });
+      if (effect.bleed && dealt > 0 && alive(game, enemy, s)) {
+        game.players[enemy].slots[s].bleeds.push({ amount: effect.bleed, turns: BLEED_TURNS });
+      }
+    }
   }
   if (effect.drain) {
-    damage(game, pid, enemy, target.slot, effect.drain, from);
+    damage(game, pid, enemy, target.slot, effect.drain, { from });
     if (game.phase === "playing") heal(game, pid, from, effect.drain);
+  }
+  if (effect.swift && self) self.swift = Math.min(MAX_SWIFT, self.swift + effect.swift);
+  if (effect.mark) {
+    game.players[enemy].slots[target.slot].marked = true;
+    game.events.push({ type: "mark", owner: enemy, slot: target.slot });
   }
   if (effect.heal) heal(game, pid, target.slot, effect.heal);
   if (effect.shield) {
-    p.slots[target.slot].shield += effect.shield;
+    const c = p.slots[target.slot];
+    c.shield = Math.min(MAX_SHIELD, c.shield + effect.shield);
     game.events.push({ type: "shield", owner: pid, slot: target.slot, amount: effect.shield });
   }
+  if (effect.transform && self) {
+    const form = CHAMPIONS[self.card].form;
+    self.form = true;
+    self.maxHp += form.bonusHp;
+    self.hp = round(self.hp + form.bonusHp);
+    game.events.push({ type: "transform", owner: pid, slot: from });
+    log(game, `✨ ${CHAMPIONS[self.card].name} transforms into ${form.name}!`);
+  }
   if (effect.draw) drawCards(game, pid, effect.draw);
-  if (effect.energy) p.energy += effect.energy;
   if (effect.refresh) p.slots[target.slot].acted = false;
+  if (effect.cooldownDown) {
+    const c = p.slots[target.slot];
+    c.cooldowns = c.cooldowns.map((cd) => Math.max(0, cd - effect.cooldownDown));
+  }
+}
+
+// Whether an ability can be used right now, and if not, why.
+function abilityBlock(game, pid, slot, index) {
+  const p = game.players[pid];
+  const champ = p.slots[slot];
+  const ability = abilitiesOf(champ)[index];
+  if (champ.cooldowns[index] > 0) return `Ready in ${champ.cooldowns[index]} turn${champ.cooldowns[index] > 1 ? "s" : ""}`;
+  if (ability.once && champ.used.includes(index)) return "Already used";
+  if (ability.effect.transform && champ.form) return "Already transformed";
+  const req = ability.requires || {};
+  if (req.belowHalf && champ.hp >= champ.maxHp / 2) return "Needs under half HP";
+  if (req.minTurn && p.turnsTaken < req.minTurn) return `Unlocks on your turn ${req.minTurn}`;
+  return null;
 }
 
 // --- Player actions on their turn ---
@@ -211,41 +348,70 @@ function applyEffect(game, pid, effect, targetType, target, from) {
 function checkTurn(game, pid) {
   if (game.phase !== "playing") return "The game isn't running.";
   if (game.turn !== pid) return "It's not your turn.";
+  if (game.pending) return "Waiting for the Soul Link guess.";
 }
 
-function useAbility(game, pid, slot, index, target) {
+function useAbility(game, pid, slot, index, target, choice) {
   const err = checkTurn(game, pid);
   if (err) return err;
   const p = game.players[pid];
   if (!SLOTS.includes(slot)) return "Unknown stronghold.";
   const champ = p.slots[slot];
-  if (!champ || champ.hp <= 0) return "That champion is knocked out.";
+  if (champ.hp <= 0) return "That champion is knocked out.";
   if (champ.acted) return "That champion already acted this turn.";
-  const ability = Number.isInteger(index) && CHAMPIONS[champ.card].abilities[index];
+  const ability = Number.isInteger(index) && abilitiesOf(champ)[index];
   if (!ability) return "Unknown ability.";
-  if (p.energy < ability.cost) return "Not enough energy.";
+  const blocked = abilityBlock(game, pid, slot, index);
+  if (blocked) return blocked;
   const targetErr = checkTarget(game, pid, ability.target, target);
   if (targetErr) return targetErr;
+  if (ability.effect.soulLink && choice !== "left" && choice !== "right") return "Pick Left or Right.";
 
-  p.energy -= ability.cost;
   champ.acted = true;
-  log(game, `${p.name}'s ${CHAMPIONS[champ.card].name} used ${ability.name}.`);
+  champ.cooldowns[index] = ability.cooldown ? ability.cooldown + 1 : 0;
+  if (ability.once) champ.used.push(index);
+  log(game, `${p.name}'s ${champName(champ)} used ${ability.name}.`);
+
+  if (ability.effect.soulLink) {
+    // The other player now has to guess. Picking the same side as the linker means they're caught.
+    game.pending = { type: "soulLink", pid, slot, target, choice, damage: ability.effect.soulLink };
+    return;
+  }
   applyEffect(game, pid, ability.effect, ability.target, target, slot);
+}
+
+function guessLink(game, pid, side) {
+  const pending = game.pending;
+  if (!pending || game.phase !== "playing") return "Nothing to guess.";
+  if (pending.target.owner !== pid) return "It's not your guess.";
+  if (side !== "left" && side !== "right") return "Pick Left or Right.";
+  game.pending = null;
+  const linker = game.players[pending.pid].slots[pending.slot];
+  const victim = game.players[pid].slots[pending.target.slot];
+  const caught = side === pending.choice;
+  game.events.push({ type: "guess", linker: pending.choice, guess: side, caught, owner: pid, slot: pending.target.slot });
+  if (caught && linker.hp > 0) {
+    linker.link = pending.target.slot;
+    linker.linkDamage = pending.damage;
+    log(game, `⛓️ ${champName(victim)} is Soul Linked! They'll take ${pending.damage} damage every turn.`);
+  } else {
+    log(game, `${champName(victim)} escaped the Soul Link.`);
+  }
 }
 
 function playCard(game, pid, handIndex, target) {
   const err = checkTurn(game, pid);
   if (err) return err;
   const p = game.players[pid];
+  if (p.cardPlayed) return "You already played a card this turn.";
   const id = Number.isInteger(handIndex) ? p.hand[handIndex] : null;
   const card = UTILITIES[id];
   if (!card) return "You don't have that card.";
-  if (p.energy < card.cost) return "Not enough energy.";
   const targetErr = checkTarget(game, pid, card.target, target);
   if (targetErr) return targetErr;
   if (card.effect.refresh && !p.slots[target.slot].acted) return "That champion hasn't acted yet.";
 
-  p.energy -= card.cost;
+  p.cardPlayed = true;
   p.hand.splice(handIndex, 1);
   log(game, `${p.name} played ${card.name}.`);
   applyEffect(game, pid, card.effect, card.target, target, null);
@@ -261,6 +427,7 @@ function forfeit(game, pid) {
   if (game.phase === "over") return;
   game.phase = "over";
   game.winner = opponentOf(game, pid);
+  game.pending = null;
   log(game, `${game.players[pid].name} left the game.`);
 }
 
@@ -271,17 +438,38 @@ function viewFor(game, pid) {
   for (const id of game.order) {
     const p = game.players[id];
     const mine = id === pid;
+    let slots = null;
+    if (p.slots && (mine || bothPicked)) {
+      slots = {};
+      for (const s of SLOTS) {
+        const c = p.slots[s];
+        slots[s] = {
+          ...c,
+          name: champName(c),
+          abilities: abilitiesOf(c).map((a, i) => ({
+            name: a.name, desc: a.desc, cooldown: a.cooldown || 0, target: a.target,
+            blocked: game.phase === "playing" ? abilityBlock(game, id, s, i) : null,
+          })),
+        };
+      }
+    }
     players[id] = {
       id,
       name: p.name,
-      energy: p.energy,
       handCount: p.hand.length,
       deckCount: p.deck.length,
+      cardPlayed: p.cardPlayed,
+      turnsTaken: p.turnsTaken,
       hand: mine ? p.hand : null,
       offered: mine ? p.offered : null,
       picked: !!p.slots,
-      slots: mine || bothPicked ? p.slots : null,
+      slots,
     };
+  }
+  let pending = null;
+  if (game.pending) {
+    const { pid: linker, slot, target, choice } = game.pending;
+    pending = { type: "soulLink", linker, slot, target, choice: linker === pid ? choice : null };
   }
   return {
     phase: game.phase,
@@ -290,6 +478,7 @@ function viewFor(game, pid) {
     order: game.order,
     turn: game.turn,
     winner: game.winner,
+    pending,
     log: game.log,
     events: game.events,
     attackable: game.phase === "playing" ? attackableSlots(game, opponentOf(game, pid)) : [],
@@ -297,4 +486,4 @@ function viewFor(game, pid) {
   };
 }
 
-module.exports = { createGame, chooseLineup, useAbility, playCard, endTurn, forfeit, viewFor };
+module.exports = { createGame, chooseLineup, useAbility, guessLink, playCard, endTurn, forfeit, viewFor };

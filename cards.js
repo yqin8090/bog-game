@@ -2,112 +2,170 @@
 //
 // CHAMPIONS sit at your strongholds. Each one has:
 //   name, title  - shown on the card
+//   class        - frontliner, warrior, assassin, support or ranger
 //   hp           - how much damage it can take before its stronghold falls
 //   color        - the card's main color
-//   art          - an emoji shown as the picture (until we add real art)
-//   image        - optional: a picture file in public/cards/, like "sam.png"
-//   abilities    - what it can do on your turn (one ability per champion per turn)
+//   art          - an emoji shown as the picture when there's no image
+//   image        - optional: a picture file in public/cards/, like "sam.jpg"
+//   abilities    - what it can do. Each champion can use one ability per turn.
+//   passive      - optional: always-on powers
+//   form         - optional: a transformation (like Ruhaan turning into Simba)
 //   leader       - a bonus that only works while this champion is at the back
 //
-// Ability "target" can be:
-//   "enemy"      - pick an enemy champion you're allowed to attack
-//   "ally"       - pick one of your own champions
-//   "allEnemies" - hits every enemy champion you're allowed to attack
-//   "none"       - no target needed
-//
-// Ability "effect" can include:
-//   damage: N  - deal N damage        heal: N   - heal N hp
-//   shield: N  - block the next N damage
-//   drain: N   - deal N damage and heal this champion N
-//   draw: N    - draw N utility cards  energy: N - gain N energy this turn
-//   refresh    - a champion that already acted this turn can act again
+// Ability fields:
+//   cooldown     - how many of your turns you must wait before using it again (0 = every turn)
+//   once         - can only be used once per game
+//   requires     - { belowHalf: true } needs this champion under half HP,
+//                  { minTurn: N } can't be used until your turn N
+//   target:
+//     "enemy"      - an enemy champion you're allowed to attack
+//     "anyEnemy"   - any enemy champion, even a protected leader
+//     "ally"       - one of your own champions
+//     "allEnemies" - every enemy champion you're allowed to attack
+//     "enemyFront" - both enemy front champions
+//     "none"       - no target
+//   effect:
+//     damage: N    - deal N damage          heal: N    - heal N HP
+//     shield: N    - block the next N damage (a champion can hold up to 6 shield)
+//     drain: N     - deal N damage and heal this champion N
+//     draw: N      - draw N utility cards
+//     refresh      - a champion that already acted this turn can act again
+//     cooldownDown: N - a champion's cooldowns go down by N
+//     mark         - the next hit on the target deals double damage
+//     swift: N     - this champion gains N Swift stacks (each is a 10% chance to dodge, max 3)
+//     bleed: N     - the target loses N HP at the start of each of their turns, for 3 turns
+//     transform    - turn into this champion's form
+//     soulLink: N  - Soul Link guessing game; if it works, the target takes N damage every turn
+
+const CLASSES = {
+  frontliner: "🛡️ Frontliner",
+  warrior: "⚔️ Warrior",
+  assassin: "🗡️ Assassin",
+  support: "💚 Support",
+  ranger: "🏹 Ranger",
+};
 
 const LEADERS = {
   rally: { name: "Rally", desc: "All your champions deal +1 damage." },
   bulwark: { name: "Bulwark", desc: "Your front champions take 1 less damage from each hit." },
   fortify: { name: "Fortify", desc: "At the start of your turn, heal your front champions 1." },
   thorns: { name: "Thorns", desc: "When an enemy champion hits your front champion, it takes 1 damage back." },
-  inspire: { name: "Inspire", desc: "You get +1 energy every turn." },
+  haste: { name: "Haste", desc: "Your cooldowns go down 1 extra at the start of your turn." },
   scholar: { name: "Scholar", desc: "Draw an extra utility card every turn." },
   lifeline: { name: "Lifeline", desc: "At the start of your turn, this leader heals 2." },
 };
 
 const CHAMPIONS = {
-  blaze: {
-    name: "Blaze", title: "The Firestarter", hp: 12, color: "#e85d04", art: "🔥",
+  // ---------- Hunter's friends ----------
+  ruhaan: {
+    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", hp: 10, color: "#2b6cb0", art: "🐾",
+    image: "ruhaan.jpg",
     abilities: [
-      { name: "Fireball", cost: 2, target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
-      { name: "Inferno", cost: 3, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
+      { name: "Neuro Scan", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
+      { name: "Paw Swipe", cooldown: 1, target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
+      {
+        name: "Simba Form", once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
+        desc: "Turn into Simba! +10 max HP and HP, Swift dodge is doubled (up to 60%), Paw Swipe becomes Wolf Claws. Needs under half HP, after 4 turns.",
+      },
+    ],
+    form: {
+      name: "Simba Form", image: "ruhaan-simba.jpg", bonusHp: 10, swiftMultiplier: 2,
+      replace: {
+        1: { name: "Wolf Claws", cooldown: 1, target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
+      },
+    },
+    leader: "rally",
+  },
+  abbas: {
+    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", hp: 10, color: "#44337a", art: "💀",
+    image: "abbas.jpg",
+    passive: {
+      lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
+      desc: "Heals 50% of damage he deals, and can heal past max HP. Takes 1.5x damage from the enemy leader.",
+    },
+    abilities: [
+      { name: "Scythe Slice", cooldown: 2, target: "enemyFront", effect: { damage: 4 }, desc: "Swing across the board: 4 damage to both enemy front champions." },
+      { name: "Soul Link", cooldown: 3, target: "anyEnemy", effect: { soulLink: 2 }, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
+    ],
+    leader: "thorns",
+  },
+
+  // ---------- Made-up champions (replace with more friends!) ----------
+  blaze: {
+    name: "Blaze", title: "The Firestarter", class: "ranger", hp: 12, color: "#e85d04", art: "🔥",
+    abilities: [
+      { name: "Fireball", cooldown: 1, target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
+      { name: "Inferno", cooldown: 2, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
     ],
     leader: "rally",
   },
   ironwall: {
-    name: "Ironwall", title: "The Unbreakable", hp: 18, color: "#6c757d", art: "🛡️",
+    name: "Ironwall", title: "The Unbreakable", class: "frontliner", hp: 16, color: "#6c757d", art: "🛡️",
     abilities: [
-      { name: "Bash", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-      { name: "Guard", cost: 2, target: "ally", effect: { shield: 4 }, desc: "Give a champion a 4 shield." },
+      { name: "Bash", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Guard", cooldown: 1, target: "ally", effect: { shield: 4 }, desc: "Give a champion a 4 shield." },
     ],
     leader: "bulwark",
   },
   sage: {
-    name: "Sage", title: "The Healer", hp: 11, color: "#2a9d8f", art: "🌿",
+    name: "Sage", title: "The Healer", class: "support", hp: 11, color: "#2a9d8f", art: "🌿",
     abilities: [
-      { name: "Mend", cost: 2, target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4." },
-      { name: "Zap", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Mend", cooldown: 1, target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4." },
+      { name: "Zap", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "fortify",
   },
   shade: {
-    name: "Shade", title: "The Shadow", hp: 10, color: "#5a189a", art: "🗡️",
+    name: "Shade", title: "The Shadow", class: "assassin", hp: 10, color: "#5a189a", art: "🗡️",
     abilities: [
-      { name: "Backstab", cost: 2, target: "enemy", effect: { damage: 5 }, desc: "Deal 5 damage." },
-      { name: "Jab", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Backstab", cooldown: 2, target: "enemy", effect: { damage: 5 }, desc: "Deal 5 damage." },
+      { name: "Jab", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "thorns",
   },
   spark: {
-    name: "Spark", title: "The Storm", hp: 12, color: "#0077b6", art: "⚡",
+    name: "Spark", title: "The Storm", class: "ranger", hp: 12, color: "#0077b6", art: "⚡",
     abilities: [
-      { name: "Chain Lightning", cost: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
-      { name: "Static", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Chain Lightning", cooldown: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
+      { name: "Static", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
-    leader: "inspire",
+    leader: "haste",
   },
   brute: {
-    name: "Brute", title: "The Wrecking Ball", hp: 16, color: "#9d0208", art: "👊",
+    name: "Brute", title: "The Wrecking Ball", class: "warrior", hp: 14, color: "#9d0208", art: "👊",
     abilities: [
-      { name: "Smash", cost: 3, target: "enemy", effect: { damage: 6 }, desc: "Deal 6 damage." },
-      { name: "Punch", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Smash", cooldown: 2, target: "enemy", effect: { damage: 6 }, desc: "Deal 6 damage." },
+      { name: "Punch", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "thorns",
   },
   leech: {
-    name: "Leech", title: "The Thirsty", hp: 13, color: "#386641", art: "🦇",
+    name: "Leech", title: "The Thirsty", class: "assassin", hp: 12, color: "#386641", art: "🦇",
     abilities: [
-      { name: "Drain", cost: 2, target: "enemy", effect: { drain: 3 }, desc: "Deal 3 damage and heal Leech 3." },
-      { name: "Bite", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Drain", cooldown: 1, target: "enemy", effect: { drain: 3 }, desc: "Deal 3 damage and heal Leech 3." },
+      { name: "Bite", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "lifeline",
   },
   oracle: {
-    name: "Oracle", title: "The Seer", hp: 11, color: "#b5179e", art: "🔮",
+    name: "Oracle", title: "The Seer", class: "support", hp: 11, color: "#b5179e", art: "🔮",
     abilities: [
-      { name: "Foresight", cost: 1, target: "none", effect: { draw: 1 }, desc: "Draw a utility card." },
-      { name: "Bolt", cost: 2, target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage." },
+      { name: "Foresight", cooldown: 1, target: "none", effect: { draw: 1 }, desc: "Draw a utility card." },
+      { name: "Bolt", cooldown: 1, target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage." },
     ],
     leader: "scholar",
   },
 };
 
-// UTILITY cards are played from your hand. "count" is how many are in each player's deck.
+// UTILITY cards are played from your hand, one per turn. "count" is how many are in each player's deck.
 const UTILITIES = {
-  potion: { name: "Potion", cost: 1, target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4.", art: "🧪", count: 4 },
-  bigPotion: { name: "Big Potion", cost: 2, target: "ally", effect: { heal: 7 }, desc: "Heal a champion 7.", art: "⚗️", count: 2 },
-  shield: { name: "Shield", cost: 1, target: "ally", effect: { shield: 3 }, desc: "Give a champion a 3 shield.", art: "🔰", count: 3 },
-  bomb: { name: "Bomb", cost: 2, target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage.", art: "💣", count: 3 },
-  fireArrow: { name: "Fire Arrow", cost: 1, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage.", art: "🏹", count: 4 },
-  energyDrink: { name: "Energy Drink", cost: 0, target: "none", effect: { energy: 2 }, desc: "Gain 2 energy this turn.", art: "🥤", count: 2 },
-  secondWind: { name: "Second Wind", cost: 2, target: "ally", effect: { refresh: true }, desc: "A champion that already acted can act again.", art: "💨", count: 2 },
+  potion: { name: "Potion", target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4.", art: "🧪", count: 4 },
+  bigPotion: { name: "Big Potion", target: "ally", effect: { heal: 7 }, desc: "Heal a champion 7.", art: "⚗️", count: 2 },
+  shield: { name: "Shield", target: "ally", effect: { shield: 3 }, desc: "Give a champion a 3 shield.", art: "🔰", count: 3 },
+  bomb: { name: "Bomb", target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage.", art: "💣", count: 3 },
+  fireArrow: { name: "Fire Arrow", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage.", art: "🏹", count: 4 },
+  energyDrink: { name: "Energy Drink", target: "ally", effect: { cooldownDown: 1 }, desc: "A champion's cooldowns go down by 1.", art: "🥤", count: 2 },
+  secondWind: { name: "Second Wind", target: "ally", effect: { refresh: true }, desc: "A champion that already acted can act again.", art: "💨", count: 2 },
 };
 
-module.exports = { LEADERS, CHAMPIONS, UTILITIES };
+module.exports = { CLASSES, LEADERS, CHAMPIONS, UTILITIES };
