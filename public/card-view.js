@@ -1,4 +1,5 @@
 // Draws a champion as a trading card. Used by the game board, the setup screen and cards-preview.html.
+// The art fills the whole card. The name bar sits on top and the attacks sit over the art.
 // Sizes inside a card are in cqw (percent of the card's own width), so one design fits any size.
 // Set --w on a card, or on a parent, to choose how wide it is.
 const CardView = (() => {
@@ -27,7 +28,7 @@ const CardView = (() => {
     return "";
   }
 
-  // The small circle on an attack shows how many turns until it's ready again.
+  // The round badge on an attack shows how many turns until it's ready again.
   function cooldownHtml(turns) {
     if (!turns) return `<span class="tcg-cd" title="Ready every turn">∞</span>`;
     return `<span class="tcg-cd" title="Cooldown: ${turns} turn${turns > 1 ? "s" : ""}">${turns}</span>`;
@@ -79,6 +80,7 @@ const CardView = (() => {
     const down = !!state && hp <= 0;
     const leaderActive = !!opts.isLeader && !down;
     const image = formOn ? c.form.image : c.image;
+    const stage = formOn ? "Simba Form" : defs.CLASSES[c.class] || "";
     const dodgePct = state ? state.swift * 10 * (formOn ? c.form.swiftMultiplier : 1) : 0;
 
     const el = document.createElement("div");
@@ -101,23 +103,24 @@ const CardView = (() => {
       <div class="tcg-inner">
         <div class="tcg-art">
           ${image ? `<img src="${esc(image)}" alt="" draggable="false">` : `<span class="tcg-emoji">${esc(c.art)}</span>`}
-          ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
           <div class="tcg-foil"></div>
         </div>
+        <div class="tcg-shade"></div>
         <div class="tcg-top">
           <div class="tcg-names">
-            <span class="tcg-stage">${esc(defs.CLASSES[c.class] || "")}</span>
+            <span class="tcg-stage">${esc(stage)}</span>
             <span class="tcg-name">${esc(state ? state.name : c.name)}</span>
           </div>
-          <div class="tcg-hp">${fmt(hp)}<small> / ${fmt(maxHp)} HP</small></div>
+          <div class="tcg-hp">${fmt(hp)}<small> HP</small></div>
           <span class="tcg-orb">${type.icon}</span>
         </div>
         <div class="tcg-hpbar"><div style="width:${Math.min(100, (hp / maxHp) * 100)}%"></div></div>
-        <div class="tcg-body">
-          ${attacks.map(attackHtml).join("")}
-          ${power ? powerHtml(power, formOn) : ""}
-          ${c.passive ? passiveHtml(c.passive) : ""}
+        ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
+        <div class="tcg-body">${attacks.map(attackHtml).join("")}</div>
+        <div class="tcg-bottom">
+          ${power ? powerHtml(power, formOn) : c.passive ? passiveHtml(c.passive) : ""}
           <div class="tcg-leader${leaderActive ? " active" : ""}"><span>👑</span> <b>${esc(leader.name)}</b> <em>${esc(leader.short || leader.desc)}</em></div>
+          ${c.credit ? `<div class="tcg-credit">${esc(c.credit)}</div>` : ""}
         </div>
         ${down ? `<div class="tcg-fallen">FALLEN</div>` : ""}
       </div>`;

@@ -63,7 +63,7 @@ const CHAMPIONS = {
   // ---------- Hunter's friends ----------
   ruhaan: {
     name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", type: "lightning", rarity: "holo", hp: 10, art: "🐾",
-    image: "cards/ruhaan-card.jpg",
+    image: "cards/ruhaan-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Neuro Scan", short: "Next hit deals double", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
       { name: "Paw Swipe", short: "2 damage, +1 Swift", cooldown: 1, target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
@@ -73,7 +73,7 @@ const CHAMPIONS = {
       },
     ],
     form: {
-      name: "Simba Form", image: "cards/ruhaan-form-card.jpg", bonusHp: 10, swiftMultiplier: 2,
+      name: "Simba Form", image: "cards/ruhaan-card.jpg", bonusHp: 10, swiftMultiplier: 2,
       replace: {
         1: { name: "Wolf Claws", short: "4 damage + bleed", cooldown: 1, target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
       },
@@ -82,7 +82,7 @@ const CHAMPIONS = {
   },
   abbas: {
     name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", type: "darkness", rarity: "holo", hp: 10, art: "💀",
-    image: "cards/abbas-card.jpg",
+    image: "cards/abbas-card.jpg", credit: "Art: Gemini",
     passive: {
       name: "Reaper's Hunger", short: "Heals half of damage", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
       desc: "Heals 50% of damage he deals, and can heal past max HP. Takes 1.5x damage from the enemy leader.",
