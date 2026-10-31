@@ -19,16 +19,9 @@ const CardView = (() => {
     return "";
   }
 
-  // The round badge on an attack shows how many turns until it's ready again.
-  function cooldownHtml(turns) {
-    if (!turns) return `<span class="tcg-cd" title="Ready every turn">∞</span>`;
-    return `<span class="tcg-cd" title="Cooldown: ${turns} turn${turns > 1 ? "s" : ""}">${turns}</span>`;
-  }
-
   function attackHtml(a) {
     return `
       <div class="tcg-atk${a.blocked ? " off" : ""}" title="${esc(a.desc)}">
-        ${cooldownHtml(a.cooldown)}
         <div class="tcg-atk-main">
           <div class="tcg-atk-line"><b>${esc(a.name)}</b><span class="tcg-dmg">${esc(damageText(a.effect))}</span></div>
           <div class="tcg-atk-desc">${esc(a.short || a.desc)}</div>
@@ -83,7 +76,7 @@ const CardView = (() => {
       .filter(Boolean)
       .join(" ");
     el.title = [
-      ...abilities.map((a) => `${a.name} (${a.power ? "once per game" : a.cooldown ? `cooldown ${a.cooldown}` : "every turn"}): ${a.desc}`),
+      ...abilities.map((a) => `${a.name} (${a.power ? "once per game" : "once per turn"}, 1 action point): ${a.desc}`),
       c.passive && `${c.passive.name}: ${c.passive.desc}`,
       `Leader, ${leader.name}: ${leader.desc}`,
     ]

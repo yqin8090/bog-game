@@ -79,10 +79,6 @@ function showLobby() {
 
 // ---------- Drawing a champion card ----------
 
-function cooldownText(a) {
-  return a.cooldown ? `cooldown ${a.cooldown}` : "every turn";
-}
-
 // state is the champion's live info during a game (null when just showing the card).
 function champCard(cardId, state, opts = {}) {
   return CardView.render(CARDS, cardId, state, opts);
@@ -243,8 +239,9 @@ function renderGame() {
     champ.abilities.forEach((a, index) => {
       const b = document.createElement("button");
       b.className = "ability";
-      b.innerHTML = `<b>${esc(a.name)}</b> <small>${esc(a.blocked || cooldownText(a))}</small><span>${esc(a.desc)}</span>`;
-      b.disabled = !!a.blocked;
+      const noAction = me.actionsLeft < 1;
+      b.innerHTML = `<b>${esc(a.name)}</b> <small>${esc(a.blocked || (noAction ? "No action points left" : "1 action point"))}</small><span>${esc(a.desc)}</span>`;
+      b.disabled = !!a.blocked || noAction;
       if (selected.kind === "ability" && selected.index === index) b.classList.add("chosen");
       b.onclick = () => {
         if (["enemy", "anyEnemy", "ally"].includes(a.target)) {
@@ -263,10 +260,13 @@ function renderGame() {
   } else if (selected && selected.kind === "card") {
     action.innerHTML = `<p class="hint">Now click a glowing champion.</p>`;
   } else if (myTurn) {
-    action.innerHTML = `<p class="hint">Click one of your champions to use an ability. You can also play one card from your hand each turn.</p>`;
+    action.innerHTML = `<p class="hint">Click one of your champions to use an ability. Each ability and each card costs 1 action point.</p>`;
   }
 
-  $("energy").textContent = me.cardsLeft > 0 ? `🃏 ${me.cardsLeft} card${me.cardsLeft === 1 ? "" : "s"} to play this turn` : "🃏 No cards left this turn";
+  // Action points as dots: filled ● for each point left, hollow ○ for each one spent.
+  const actionMax = Math.max(me.actionsMax, me.actionsLeft);
+  const dots = "●".repeat(me.actionsLeft) + "○".repeat(actionMax - me.actionsLeft);
+  $("energy").textContent = myTurn ? `⚡ Action points: ${dots} (${me.actionsLeft} left)` : "⚡ Action points refill on your turn";
   $("end-turn").disabled = !myTurn;
 
   // Your hand of utility cards.
@@ -276,11 +276,11 @@ function renderGame() {
     const u = CARDS.UTILITIES[id];
     const el = document.createElement("div");
     el.className = "util";
-    if (!myTurn || me.cardsLeft < 1) el.classList.add("cant");
+    if (!myTurn || me.actionsLeft < me.utilityCost) el.classList.add("cant");
     if (selected && selected.kind === "card" && selected.handIndex === handIndex) el.classList.add("selected");
     el.innerHTML = `<div class="art">${u.art}</div><div class="name">${esc(u.name)}</div><div class="desc">${esc(u.desc)}</div>`;
     el.onclick = () => {
-      if (!myTurn || me.cardsLeft < 1) return;
+      if (!myTurn || me.actionsLeft < me.utilityCost) return;
       if (u.target === "none") return send("playCard", { handIndex });
       selected = selected && selected.kind === "card" && selected.handIndex === handIndex ? null : { kind: "card", handIndex };
       renderGame();

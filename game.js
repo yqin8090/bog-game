@@ -14,6 +14,9 @@ const MAX_SWIFT = 3;
 const BLEED_TURNS = 3;
 const MAX_SHIELD = 6;
 const SUDDEN_DEATH_TURN = 21; // so games can't go on forever
+const BASE_ACTIONS = 2; // action points each turn at first
+const RAISED_ACTIONS = 3; // from the starting player's third turn on
+const RAISE_AT_TURN = 3;
 
 // Fractions like 1.5x damage can make HP like 7.5, so keep one decimal place.
 const round = (n) => Math.round(n * 10) / 10;
@@ -60,7 +63,8 @@ function createGame(players) {
       hand: [],
       deck: buildDeck(),
       turnsTaken: 0,
-      cardsPlayed: 0,
+      actions: 0, // action points left this turn
+      actionMax: 0, // action points this turn started with
       boosts: [], // damage boosts from Tailwind and Gust: { mult, from (caster's slot), until (turn number) }
     };
   });
@@ -85,9 +89,14 @@ function leaderOf(game, pid) {
   return back.hp > 0 ? CHAMPIONS[back.card].leader : null;
 }
 
-// How many utility cards you can play this turn.
-function cardLimit(game, pid) {
-  return leaderOf(game, pid) === "windfall" ? 2 : 1;
+// Action points each turn: 2, or 3 once the player who started the game has had three turns.
+function actionPointsFor(game) {
+  return game.players[game.order[0]].turnsTaken >= RAISE_AT_TURN ? RAISED_ACTIONS : BASE_ACTIONS;
+}
+
+// Action points a utility card costs. Windfall makes them free.
+function utilityCost(game, pid) {
+  return leaderOf(game, pid) === "windfall" ? 0 : 1;
 }
 
 // The damage multiplier from active boosts. A boost skips the champion that cast it.
@@ -142,7 +151,7 @@ function chooseLineup(game, pid, lineup) {
     const def = CHAMPIONS[lineup[s]];
     p.slots[s] = {
       card: lineup[s], hp: def.hp + hpBonus, maxHp: def.hp + hpBonus, shield: 0, acted: false,
-      cooldowns: def.abilities.map(() => 0), used: [], swift: 0, form: false,
+      used: [], swift: 0, form: false,
       marked: false, bleeds: [], link: null, dazed: false,
     };
   }
@@ -164,16 +173,16 @@ function startTurn(game, pid) {
   const enemy = opponentOf(game, pid);
   const leader = leaderOf(game, pid);
   p.turnsTaken++;
-  p.cardsPlayed = 0;
 
   // The player who goes first doesn't draw on turn 1, to keep it fair.
   if (game.turnNumber > 1) drawCards(game, pid, 1 + (leader === "scholar" ? 1 : 0));
 
+  // Action points for this turn. Haste adds one.
+  p.actionMax = actionPointsFor(game) + (leader === "haste" ? 1 : 0);
+  p.actions = p.actionMax;
   for (const s of SLOTS) {
     const c = p.slots[s];
     c.acted = !!c.dazed; // a dazed champion sits this turn out
-    const tick = 1 + (leader === "haste" ? 1 : 0);
-    c.cooldowns = c.cooldowns.map((cd) => Math.max(0, cd - tick));
   }
 
   // Bleeding champions lose HP at the start of their own turn.
@@ -360,10 +369,7 @@ function applyEffect(game, pid, effect, targetType, target, from) {
   if (effect.skipTurn) game.skipFor = enemy;
   if (effect.draw) drawCards(game, pid, effect.draw);
   if (effect.refresh) p.slots[target.slot].acted = false;
-  if (effect.cooldownDown) {
-    const c = p.slots[target.slot];
-    c.cooldowns = c.cooldowns.map((cd) => Math.max(0, cd - effect.cooldownDown));
-  }
+  if (effect.actionPoint) p.actions += effect.actionPoint;
 }
 
 // Whether an ability can be used right now, and if not, why.
@@ -371,7 +377,6 @@ function abilityBlock(game, pid, slot, index) {
   const p = game.players[pid];
   const champ = p.slots[slot];
   const ability = abilitiesOf(champ)[index];
-  if (champ.cooldowns[index] > 0) return `Ready in ${champ.cooldowns[index]} turn${champ.cooldowns[index] > 1 ? "s" : ""}`;
   if (ability.once && champ.used.includes(index)) return "Already used";
   if (ability.effect.transform && champ.form) return "Already transformed";
   const req = ability.requires || {};
@@ -404,9 +409,10 @@ function useAbility(game, pid, slot, index, target, choice) {
   const targetErr = checkTarget(game, pid, ability.target, target);
   if (targetErr) return targetErr;
   if (ability.effect.soulLink && choice !== "left" && choice !== "right") return "Pick Left or Right.";
+  if (p.actions < 1) return "You have no action points left this turn.";
 
+  p.actions--;
   champ.acted = true;
-  champ.cooldowns[index] = ability.cooldown ? ability.cooldown + 1 : 0;
   if (ability.once) champ.used.push(index);
   log(game, `${p.name}'s ${champName(champ)} used ${ability.name}.`);
 
@@ -441,7 +447,8 @@ function playCard(game, pid, handIndex, target) {
   const err = checkTurn(game, pid);
   if (err) return err;
   const p = game.players[pid];
-  if (p.cardsPlayed >= cardLimit(game, pid)) return "You can't play any more cards this turn.";
+  const cost = utilityCost(game, pid);
+  if (p.actions < cost) return "You have no action points left this turn.";
   const id = Number.isInteger(handIndex) ? p.hand[handIndex] : null;
   const card = UTILITIES[id];
   if (!card) return "You don't have that card.";
@@ -450,7 +457,7 @@ function playCard(game, pid, handIndex, target) {
   if (card.effect.refresh && !p.slots[target.slot].acted) return "That champion hasn't acted yet.";
   if (card.effect.refresh && p.slots[target.slot].dazed) return "That champion is dazed and can't act this turn.";
 
-  p.cardsPlayed++;
+  p.actions -= cost;
   p.hand.splice(handIndex, 1);
   log(game, `${p.name} played ${card.name}.`);
   applyEffect(game, pid, card.effect, card.target, target, null);
@@ -496,7 +503,7 @@ function viewFor(game, pid) {
           name: champName(c),
           boostMult: boostOf(game, id, s),
           abilities: abilitiesOf(c).map((a, i) => ({
-            name: a.name, short: a.short, desc: a.desc, cooldown: a.cooldown || 0, target: a.target, effect: a.effect, power: !!a.power,
+            name: a.name, short: a.short, desc: a.desc, target: a.target, effect: a.effect, power: !!a.power,
             blocked: game.phase === "playing" ? abilityBlock(game, id, s, i) : null,
           })),
         };
@@ -507,7 +514,9 @@ function viewFor(game, pid) {
       name: p.name,
       handCount: p.hand.length,
       deckCount: p.deck.length,
-      cardsLeft: p.slots ? cardLimit(game, id) - p.cardsPlayed : 0,
+      actionsLeft: p.actions,
+      actionsMax: p.actionMax,
+      utilityCost: p.slots ? utilityCost(game, id) : 1,
       turnsTaken: p.turnsTaken,
       hand: mine ? p.hand : null,
       offered: mine ? p.offered : null,

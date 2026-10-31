@@ -36,7 +36,7 @@
           form: true,
           abilities: r.abilities.map((a, i) => {
             const x = r.form.replace[i] || a;
-            return { name: x.name, short: x.short, desc: x.desc, cooldown: x.cooldown || 0, target: x.target, effect: x.effect, power: !!x.power, blocked: null };
+            return { name: x.name, short: x.short, desc: x.desc, target: x.target, effect: x.effect, power: !!x.power, blocked: null };
           }),
         };
         gallery.insertBefore(CardView.render(defs, "ruhaan", simba, { isLeader: true }), gallery.children[1]);
