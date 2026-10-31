@@ -398,3 +398,19 @@ button.ability span { font-weight: 400; font-size: 12px; }
   .row-front, .row-back { gap: 8px; }
   .util { flex-basis: 100px; }
 }
+
+/* The game screen is two parts: the board (.play) and the action panel (.panel). Phones stack them.
+   minmax(0, 1fr) keeps a wide row (like the hand of cards) from stretching the page. */
+#game:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.play, .panel { min-width: 0; }
+.panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+
+/* Wide screens: the action panel sits to the right of the board */
+@media (min-width: 900px) {
+  body.wide main { max-width: 1200px; }
+  #game:not([hidden]) { grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; }
+  .panel { position: sticky; top: 16px; }
+  .panel .hand { flex-wrap: wrap; overflow: visible; }
+}
+
+.sound-toggle { position: fixed; top: 12px; right: 12px; z-index: 5; font-size: 13px; padding: 6px 10px; }

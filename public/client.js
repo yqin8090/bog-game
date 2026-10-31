@@ -9,8 +9,20 @@ let selected = null; // what you clicked: { kind: "champ", slot } | { kind: "abi
 let linkTarget = null; // Soul Link target waiting for you to pick Left or Right
 let lineup = { left: null, right: null, back: null };
 let picking = null; // champion clicked during setup
+let wasMyTurn = false; // so the turn chime plays once, when your turn starts
+
+// The sound for each kind of game event (see sound.js)
+const SOUND_FOR = { damage: "hit", heal: "heal", shield: "shield", dodge: "dodge", mark: "mark", transform: "transform", slash: "slash" };
 
 fetch("/cards.json").then((r) => r.json()).then((c) => (CARDS = c));
+
+const soundButton = $("sound");
+const showSoundState = () => (soundButton.textContent = Sound.isMuted() ? "🔇 Sound off" : "🔊 Sound on");
+soundButton.onclick = () => {
+  Sound.setMuted(!Sound.isMuted());
+  showSoundState();
+};
+showSoundState();
 
 const SCREENS = ["home", "lobby", "setup", "game"];
 function show(screen) {
@@ -175,6 +187,9 @@ function renderGame() {
   const me = game.players[game.me];
   const opp = game.players[game.opponent];
   const myTurn = game.turn === game.me && game.phase === "playing" && !game.pending;
+  if (myTurn && !wasMyTurn) Sound.play("turn");
+  wasMyTurn = myTurn;
+  Sound.startMusic();
   const targets = targetsFor();
 
   // Who is Soul Linked to whom.
@@ -326,6 +341,7 @@ function popText(el, text, type) {
 
 function playEvents(events) {
   for (const e of events) {
+    Sound.play(e.type === "guess" ? (e.caught ? "link" : "dodge") : SOUND_FOR[e.type]);
     if (e.type === "slash") {
       const row = document.querySelector(e.owner === game.me ? '[data-row="my-front"]' : '[data-row="opp-front"]');
       const slash = document.createElement("div");
@@ -368,6 +384,11 @@ function updateOverButtons() {
 
 function renderOver() {
   const won = game.winner === game.me;
+  if ($("over").hidden) {
+    // Only on the first render of the game over screen
+    Sound.play(won ? "win" : "lose");
+    Sound.stopMusic();
+  }
   $("over-title").textContent = won ? "🏆 You win!" : "You lost!";
   $("over-text").textContent = game.log.filter((l) => !l.startsWith("🏆")).pop() || "";
   updateOverButtons();

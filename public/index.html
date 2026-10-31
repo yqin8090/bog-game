@@ -9,6 +9,7 @@
 <body>
   <main>
     <h1>BoG</h1>
+    <button id="sound" class="sound-toggle secondary">🔊 Sound on</button>
 
     <section id="home">
       <input id="name" placeholder="Your name" maxlength="20">
@@ -42,29 +43,33 @@
     </section>
 
     <section id="game" hidden>
-      <div class="status">
-        <div id="opp-info"></div>
-        <div id="turn-banner"></div>
-      </div>
-      <div class="board">
-        <div class="side enemy">
-          <div class="row-back" data-row="opp-back"></div>
-          <div class="row-front" data-row="opp-front"></div>
+      <div class="play">
+        <div class="status">
+          <div id="opp-info"></div>
+          <div id="turn-banner"></div>
         </div>
-        <div class="divider"></div>
-        <div class="side mine">
-          <div class="row-front" data-row="my-front"></div>
-          <div class="row-back" data-row="my-back"></div>
+        <div class="board">
+          <div class="side enemy">
+            <div class="row-back" data-row="opp-back"></div>
+            <div class="row-front" data-row="opp-front"></div>
+          </div>
+          <div class="divider"></div>
+          <div class="side mine">
+            <div class="row-front" data-row="my-front"></div>
+            <div class="row-back" data-row="my-back"></div>
+          </div>
         </div>
       </div>
-      <div id="action" class="action"></div>
-      <div class="controls">
-        <div id="energy"></div>
-        <button id="end-turn">End turn</button>
-      </div>
-      <div id="hand" class="hand"></div>
-      <p id="game-error" class="error"></p>
-      <ul id="log" class="log"></ul>
+      <aside class="panel">
+        <div id="action" class="action"></div>
+        <div class="controls">
+          <div id="energy"></div>
+          <button id="end-turn">End turn</button>
+        </div>
+        <div id="hand" class="hand"></div>
+        <p id="game-error" class="error"></p>
+        <ul id="log" class="log"></ul>
+      </aside>
     </section>
 
     <div id="link" class="overlay" hidden>
@@ -83,6 +88,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="card-view.js"></script>
+  <script src="sound.js"></script>
   <script src="client.js"></script>
 </body>
 </html>
