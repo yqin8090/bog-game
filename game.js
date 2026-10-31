@@ -2,7 +2,7 @@
 // functions when players do things. Each action returns an error message
 // (a string) if it isn't allowed, or nothing if it worked.
 
-const { CHAMPIONS, UTILITIES } = require("./cards");
+const { CHAMPIONS, UTILITIES, BACKGROUNDS } = require("./cards");
 
 const SLOTS = ["left", "right", "back"];
 const FRONT = ["left", "right"];
@@ -41,6 +41,7 @@ function createGame(players) {
   const game = {
     phase: "setup", // "setup" -> "playing" -> "over"
     order: players.map((p) => p.id),
+    background: shuffle(BACKGROUNDS)[0], // the picture behind the board, the same for both players
     players: {},
     turn: null,
     turnNumber: 0,
@@ -473,6 +474,7 @@ function viewFor(game, pid) {
   }
   return {
     phase: game.phase,
+    background: game.background,
     me: pid,
     opponent: opponentOf(game, pid),
     order: game.order,

@@ -172,4 +172,7 @@ const UTILITIES = {
   secondWind: { name: "Second Wind", target: "ally", effect: { refresh: true }, desc: "A champion that already acted can act again.", art: "💨", count: 2 },
 };
 
-module.exports = { CLASSES, LEADERS, CHAMPIONS, UTILITIES };
+// Pictures behind the board. The server picks one at random for each game.
+const BACKGROUNDS = ["backgrounds/world-school.jpg", "backgrounds/calgary-rockies.jpg", "backgrounds/lauremont.jpg"];
+
+module.exports = { CLASSES, LEADERS, CHAMPIONS, UTILITIES, BACKGROUNDS };

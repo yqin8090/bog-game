@@ -171,6 +171,7 @@ function useOn(target) {
 
 function renderGame() {
   show("game");
+  document.querySelector(".board").style.setProperty("--bg", `url("${game.background}")`);
   const me = game.players[game.me];
   const opp = game.players[game.opponent];
   const myTurn = game.turn === game.me && game.phase === "playing" && !game.pending;
