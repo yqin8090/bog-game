@@ -3,8 +3,6 @@
 // CHAMPIONS sit at your strongholds. Each one has:
 //   name, title  - shown on the card
 //   class        - frontliner, warrior, assassin, support or ranger
-//   type         - lightning, darkness, fire, metal, grass, fighting or psychic.
-//                  Sets the card's colors and its orb icon (see card-view.js)
 //   rarity       - "holo" adds a shiny foil effect; "common" doesn't
 //   hp           - how much damage it can take before its stronghold falls
 //   art          - an emoji shown as the picture when there's no image
@@ -70,7 +68,7 @@ const LEADERS = {
 const CHAMPIONS = {
   // ---------- Hunter's friends ----------
   ruhaan: {
-    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", type: "lightning", rarity: "holo", hp: 10, art: "🐾",
+    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", rarity: "holo", hp: 10, art: "🐾",
     image: "cards/ruhaan-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Neuro Scan", short: "Next hit deals double", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
@@ -89,7 +87,7 @@ const CHAMPIONS = {
     leader: "rally",
   },
   abbas: {
-    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", type: "darkness", rarity: "holo", hp: 10, art: "💀",
+    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", rarity: "holo", hp: 10, art: "💀",
     image: "cards/abbas-card.jpg", credit: "Art: Gemini",
     passive: {
       name: "Reaper's Hunger", short: "Heals half of damage", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
@@ -103,7 +101,7 @@ const CHAMPIONS = {
   },
 
   matthew: {
-    name: "Matthew Chen", title: "The Iron Ape", class: "frontliner", type: "metal", rarity: "holo", hp: 30, art: "🦍",
+    name: "Matthew Chen", title: "The Iron Ape", class: "frontliner", rarity: "holo", hp: 30, art: "🦍",
     image: "cards/matthew-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Punch", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -114,7 +112,7 @@ const CHAMPIONS = {
     leader: "ironhide",
   },
   ted: {
-    name: "Ted Wang", title: "The Windcaller", class: "support", type: "grass", rarity: "holo", hp: 15, art: "🌬️",
+    name: "Ted Wang", title: "The Windcaller", class: "support", rarity: "holo", hp: 15, art: "🌬️",
     image: "cards/ted-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Gale Lunge", short: "2 damage, 10% to daze", cooldown: 0, target: "enemy", effect: { damage: 2, daze: 0.1 }, desc: "Deal 2 damage. 10% chance to daze the enemy, who can't act next turn." },
@@ -127,7 +125,7 @@ const CHAMPIONS = {
 
   // ---------- Made-up champions (replace with more friends!) ----------
   blaze: {
-    name: "Blaze", title: "The Firestarter", class: "ranger", type: "fire", rarity: "common", hp: 12, art: "🔥",
+    name: "Blaze", title: "The Firestarter", class: "ranger", rarity: "common", hp: 12, art: "🔥",
     abilities: [
       { name: "Fireball", cooldown: 1, target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
       { name: "Inferno", short: "2 damage to each enemy", cooldown: 2, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
@@ -135,7 +133,7 @@ const CHAMPIONS = {
     leader: "rally",
   },
   ironwall: {
-    name: "Ironwall", title: "The Unbreakable", class: "frontliner", type: "metal", rarity: "common", hp: 16, art: "🛡️",
+    name: "Ironwall", title: "The Unbreakable", class: "frontliner", rarity: "common", hp: 16, art: "🛡️",
     abilities: [
       { name: "Bash", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
       { name: "Guard", cooldown: 1, target: "ally", effect: { shield: 4 }, desc: "Give a champion a 4 shield." },
@@ -143,7 +141,7 @@ const CHAMPIONS = {
     leader: "bulwark",
   },
   sage: {
-    name: "Sage", title: "The Healer", class: "support", type: "grass", rarity: "common", hp: 11, art: "🌿",
+    name: "Sage", title: "The Healer", class: "support", rarity: "common", hp: 11, art: "🌿",
     abilities: [
       { name: "Mend", cooldown: 1, target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4." },
       { name: "Zap", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -151,7 +149,7 @@ const CHAMPIONS = {
     leader: "fortify",
   },
   shade: {
-    name: "Shade", title: "The Shadow", class: "assassin", type: "darkness", rarity: "common", hp: 10, art: "🗡️",
+    name: "Shade", title: "The Shadow", class: "assassin", rarity: "common", hp: 10, art: "🗡️",
     abilities: [
       { name: "Backstab", cooldown: 2, target: "enemy", effect: { damage: 5 }, desc: "Deal 5 damage." },
       { name: "Jab", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -159,7 +157,7 @@ const CHAMPIONS = {
     leader: "thorns",
   },
   spark: {
-    name: "Spark", title: "The Storm", class: "ranger", type: "lightning", rarity: "common", hp: 12, art: "⚡",
+    name: "Spark", title: "The Storm", class: "ranger", rarity: "common", hp: 12, art: "⚡",
     abilities: [
       { name: "Chain Lightning", short: "3 damage to each enemy", cooldown: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
       { name: "Static", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -167,7 +165,7 @@ const CHAMPIONS = {
     leader: "haste",
   },
   brute: {
-    name: "Brute", title: "The Wrecking Ball", class: "warrior", type: "fighting", rarity: "common", hp: 14, art: "👊",
+    name: "Brute", title: "The Wrecking Ball", class: "warrior", rarity: "common", hp: 14, art: "👊",
     abilities: [
       { name: "Smash", cooldown: 2, target: "enemy", effect: { damage: 6 }, desc: "Deal 6 damage." },
       { name: "Punch", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -175,7 +173,7 @@ const CHAMPIONS = {
     leader: "thorns",
   },
   leech: {
-    name: "Leech", title: "The Thirsty", class: "assassin", type: "darkness", rarity: "common", hp: 12, art: "🦇",
+    name: "Leech", title: "The Thirsty", class: "assassin", rarity: "common", hp: 12, art: "🦇",
     abilities: [
       { name: "Drain", cooldown: 1, target: "enemy", effect: { drain: 3 }, desc: "Deal 3 damage and heal Leech 3." },
       { name: "Bite", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -183,7 +181,7 @@ const CHAMPIONS = {
     leader: "lifeline",
   },
   oracle: {
-    name: "Oracle", title: "The Seer", class: "support", type: "psychic", rarity: "common", hp: 11, art: "🔮",
+    name: "Oracle", title: "The Seer", class: "support", rarity: "common", hp: 11, art: "🔮",
     abilities: [
       { name: "Foresight", cooldown: 1, target: "none", effect: { draw: 1 }, desc: "Draw a utility card." },
       { name: "Bolt", cooldown: 1, target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage." },

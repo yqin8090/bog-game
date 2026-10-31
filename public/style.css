@@ -22,10 +22,11 @@ p { margin: 0; }
 /* ---------- Trading cards (see card-view.js) ---------- */
 .tcg {
   --w: 170px;
-  --frame: #888;
-  --deep: #222;
-  --ink: #fff;
-  --glow: #fff;
+  /* One look for every card (there are no card types) */
+  --frame: #7a6a4a;
+  --deep: #1e1a12;
+  --ink: #ffffff;
+  --glow: #f3e3b0;
   --rx: 0deg;
   --ry: 0deg;
   --fx: 50%;
@@ -117,17 +118,6 @@ p { margin: 0; }
 .tcg-name { display: block; font-size: max(9px, 6.2cqw); font-weight: 900; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tcg-hp { flex: none; font-size: max(9px, 6.6cqw); font-weight: 900; line-height: 1; white-space: nowrap; }
 .tcg-hp small { font-size: max(6px, 2.9cqw); font-weight: 800; }
-.tcg-orb {
-  flex: none;
-  width: max(14px, 8cqw);
-  height: max(14px, 8cqw);
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: max(8px, 4.4cqw);
-  background: radial-gradient(circle at 35% 30%, #fff, var(--glow) 40%, var(--frame) 100%);
-  box-shadow: 0 0 0 0.5cqw rgba(0, 0, 0, 0.35);
-}
 .tcg-hpbar { position: absolute; left: 0; right: 0; top: 11%; height: 1.6cqw; z-index: 2; background: #0a0a10; }
 .tcg-hpbar div { height: 100%; background: linear-gradient(90deg, #2dc653, #b6f25a); transition: width 0.4s; }
 .tcg-badges { position: absolute; top: calc(11% + 3cqw); left: 3cqw; right: 3cqw; display: flex; flex-wrap: wrap; gap: 1.2cqw; z-index: 2; }

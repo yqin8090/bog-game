@@ -3,17 +3,6 @@
 // Sizes inside a card are in cqw (percent of the card's own width), so one design fits any size.
 // Set --w on a card, or on a parent, to choose how wide it is.
 const CardView = (() => {
-  // Each type sets the card's colors and the icon in its orb. Lightning and darkness have no icon.
-  const TYPES = {
-    lightning: { icon: "", frame: "#f5c518", deep: "#6b4f00", ink: "#2a1d00", glow: "#fff4a8" },
-    darkness: { icon: "", frame: "#7150b8", deep: "#120a1f", ink: "#ffffff", glow: "#cdb9ff" },
-    fire: { icon: "🔥", frame: "#ea5a2a", deep: "#5a1a05", ink: "#ffffff", glow: "#ffd0a8" },
-    metal: { icon: "⚙️", frame: "#a5b7c9", deep: "#33414e", ink: "#14202b", glow: "#ffffff" },
-    grass: { icon: "🌿", frame: "#4caf50", deep: "#12381a", ink: "#ffffff", glow: "#d4ffa8" },
-    fighting: { icon: "✊", frame: "#c07a2c", deep: "#43230a", ink: "#ffffff", glow: "#ffe0b0" },
-    psychic: { icon: "🔮", frame: "#b15cf0", deep: "#3a0c5c", ink: "#ffffff", glow: "#f3d9ff" },
-  };
-
   const esc = (text) => String(text).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
   const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
@@ -74,7 +63,6 @@ const CardView = (() => {
   // opts: compact (shorter text, for the board), isLeader (stands at the back), linked (Soul Link on it).
   function render(defs, cardId, state = null, opts = {}) {
     const c = defs.CHAMPIONS[cardId];
-    const type = TYPES[c.type] || TYPES.fighting;
     const leader = defs.LEADERS[c.leader];
     const formOn = !!(state && state.form);
     const hp = state ? state.hp : c.hp;
@@ -94,10 +82,6 @@ const CardView = (() => {
     el.className = ["tcg", c.rarity === "holo" ? "holo" : "", opts.compact ? "compact" : "", formOn ? "transformed" : "", fit]
       .filter(Boolean)
       .join(" ");
-    el.style.setProperty("--frame", type.frame);
-    el.style.setProperty("--deep", type.deep);
-    el.style.setProperty("--ink", type.ink);
-    el.style.setProperty("--glow", type.glow);
     el.title = [
       ...abilities.map((a) => `${a.name} (${a.power ? "once per game" : a.cooldown ? `cooldown ${a.cooldown}` : "every turn"}): ${a.desc}`),
       c.passive && `${c.passive.name}: ${c.passive.desc}`,
@@ -119,7 +103,6 @@ const CardView = (() => {
             <span class="tcg-name">${esc(state ? state.name : c.name)}</span>
           </div>
           <div class="tcg-hp">${fmt(hp)}<small> HP</small></div>
-          <span class="tcg-orb">${type.icon}</span>
         </div>
         <div class="tcg-hpbar"><div style="width:${Math.min(100, (hp / maxHp) * 100)}%"></div></div>
         ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
@@ -156,5 +139,5 @@ const CardView = (() => {
     card.style.removeProperty("--ry");
   });
 
-  return { render, TYPES };
+  return { render };
 })();
