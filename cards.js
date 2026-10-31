@@ -40,6 +40,12 @@
 //     bleed: N     - the target loses N HP at the start of each of their turns, for 3 turns
 //     transform    - turn into this champion's form
 //     soulLink: N  - Soul Link guessing game; if it works, the target takes N damage every turn
+//     frontShield: N - give both of your front champions an N shield
+//     teamShield: N  - give every champion on your team an N shield
+//     daze: 0.4    - chance (0 to 1) to daze the target. A dazed champion can't act on its owner's next turn
+//     allyBoost: N - your other two champions deal N times damage, for the rest of this turn and your next turn.
+//                    Boosts multiply, so two boosts active at once stack
+//     skipTurn     - the enemy skips their next turn
 
 const CLASSES = {
   frontliner: "🛡️ Frontliner",
@@ -57,6 +63,8 @@ const LEADERS = {
   haste: { name: "Haste", short: "Cooldowns drop 1 extra", desc: "Your cooldowns go down 1 extra at the start of your turn." },
   scholar: { name: "Scholar", short: "Draw an extra utility", desc: "Draw an extra utility card every turn." },
   lifeline: { name: "Lifeline", short: "Leader heals 2 each turn", desc: "At the start of your turn, this leader heals 2." },
+  ironhide: { name: "Ironhide", short: "All champions +2 HP", desc: "While this leader is at the back, all your champions start with 2 more HP." },
+  windfall: { name: "Windfall", short: "Play 2 utility cards a turn", desc: "You can play up to 2 utility cards each turn." },
 };
 
 const CHAMPIONS = {
@@ -92,6 +100,29 @@ const CHAMPIONS = {
       { name: "Soul Link", short: "Guess a side to link", cooldown: 3, target: "anyEnemy", effect: { soulLink: 2 }, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
     ],
     leader: "thorns",
+  },
+
+  matthew: {
+    name: "Matthew Chen", title: "The Iron Ape", class: "frontliner", type: "metal", rarity: "holo", hp: 30, art: "🦍",
+    image: "cards/matthew-card.jpg", credit: "Art: Gemini",
+    abilities: [
+      { name: "Punch", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
+      { name: "Brace", short: "2 shield to both fronts", cooldown: 2, target: "none", effect: { frontShield: 2 }, desc: "Give both of your front champions a 2 shield." },
+      { name: "Grand Slam", short: "4 damage, 40% to daze", cooldown: 2, target: "enemy", effect: { damage: 4, daze: 0.4 }, desc: "Deal 4 damage. 40% chance to daze the enemy, who can't act next turn." },
+      { name: "Iron Wall", short: "5 shield to the whole team", cooldown: 3, target: "none", effect: { teamShield: 5 }, desc: "Give every champion on your team a 5 shield." },
+    ],
+    leader: "ironhide",
+  },
+  ted: {
+    name: "Ted Wang", title: "The Windcaller", class: "support", type: "grass", rarity: "holo", hp: 15, art: "🌬️",
+    image: "cards/ted-card.jpg", credit: "Art: Gemini",
+    abilities: [
+      { name: "Gale Lunge", short: "2 damage, 10% to daze", cooldown: 0, target: "enemy", effect: { damage: 2, daze: 0.1 }, desc: "Deal 2 damage. 10% chance to daze the enemy, who can't act next turn." },
+      { name: "Tailwind", short: "Other two champions deal 1.5x", cooldown: 2, target: "none", effect: { allyBoost: 1.5 }, desc: "Your other two champions deal 1.5x damage for the rest of this turn and your next turn." },
+      { name: "Gust", short: "3 shield to all, others 2x", cooldown: 3, target: "none", effect: { teamShield: 3, allyBoost: 2 }, desc: "Give every champion on your team a 3 shield. Your other two champions deal 2x damage for the rest of this turn and your next turn. Stacks with Tailwind." },
+      { name: "Wind version of turning tide", short: "Enemy skips their next turn", power: true, once: true, target: "none", effect: { skipTurn: true }, desc: "Once per game. The enemy skips their next turn." },
+    ],
+    leader: "windfall",
   },
 
   // ---------- Made-up champions (replace with more friends!) ----------

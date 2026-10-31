@@ -25,6 +25,8 @@ const CardView = (() => {
     if (effect.soulLink) return `⛓${effect.soulLink}`;
     if (effect.heal) return `+${effect.heal}`;
     if (effect.shield) return `🔰${effect.shield}`;
+    if (effect.frontShield || effect.teamShield) return `🔰${effect.frontShield || effect.teamShield}`;
+    if (effect.allyBoost) return `×${effect.allyBoost}`;
     return "";
   }
 
@@ -45,6 +47,7 @@ const CardView = (() => {
       </div>`;
   }
 
+  // A power is spent once it's used up (Simba Form, or a once-per-game power).
   function powerHtml(a, spent) {
     return `<div class="tcg-band power${spent ? " spent" : ""}"><b>POWER · ${esc(a.name)}</b> <em>${esc(a.short || a.desc)}</em></div>`;
   }
@@ -59,6 +62,8 @@ const CardView = (() => {
     if (state.shield) pills.push(`<span title="A shield blocks damage">🔰 ${fmt(state.shield)}</span>`);
     if (state.swift) pills.push(`<span title="Chance to dodge an attack">💨 ${dodgePct}%</span>`);
     if (state.marked) pills.push(`<span class="bad" title="The next hit deals double damage">🎯 x2</span>`);
+    if (state.dazed) pills.push(`<span class="bad" title="Can't act this turn">💫 dazed</span>`);
+    if (state.boostMult > 1) pills.push(`<span title="Deals more damage this turn">💨 ×${fmt(state.boostMult)}</span>`);
     if (state.bleeds && state.bleeds.length) pills.push(`<span class="bad" title="Loses HP every turn">🩸 bleed</span>`);
     if (linked) pills.push(`<span class="bad" title="Takes damage every turn">⛓️ linked</span>`);
     if (state.link) pills.push(`<span title="Soul Link is on">⛓️ linking</span>`);
@@ -82,9 +87,11 @@ const CardView = (() => {
     const image = formOn ? c.form.image : c.image;
     const stage = formOn ? "Simba Form" : defs.CLASSES[c.class] || "";
     const dodgePct = state ? state.swift * 10 * (formOn ? c.form.swiftMultiplier : 1) : 0;
+    // Cards with more attacks get tighter rows so they all fit in the body.
+    const fit = attacks.length >= 4 ? "four" : attacks.length === 3 ? "many" : "";
 
     const el = document.createElement("div");
-    el.className = ["tcg", c.rarity === "holo" ? "holo" : "", opts.compact ? "compact" : "", formOn ? "transformed" : ""]
+    el.className = ["tcg", c.rarity === "holo" ? "holo" : "", opts.compact ? "compact" : "", formOn ? "transformed" : "", fit]
       .filter(Boolean)
       .join(" ");
     el.style.setProperty("--frame", type.frame);
@@ -118,7 +125,7 @@ const CardView = (() => {
         ${state ? badgesHtml(state, dodgePct, opts.linked) : ""}
         <div class="tcg-body">${attacks.map(attackHtml).join("")}</div>
         <div class="tcg-bottom">
-          ${power ? powerHtml(power, formOn) : c.passive ? passiveHtml(c.passive) : ""}
+          ${power ? powerHtml(power, formOn || /^Already/.test(power.blocked || "")) : c.passive ? passiveHtml(c.passive) : ""}
           <div class="tcg-leader${leaderActive ? " active" : ""}"><span>👑</span> <b>${esc(leader.name)}</b> <em>${esc(leader.short || leader.desc)}</em></div>
           ${c.credit ? `<div class="tcg-credit">${esc(c.credit)}</div>` : ""}
         </div>

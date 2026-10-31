@@ -12,7 +12,7 @@ let picking = null; // champion clicked during setup
 let wasMyTurn = false; // so the turn chime plays once, when your turn starts
 
 // The sound for each kind of game event (see sound.js)
-const SOUND_FOR = { damage: "hit", heal: "heal", shield: "shield", dodge: "dodge", mark: "mark", transform: "transform", slash: "slash" };
+const SOUND_FOR = { damage: "hit", heal: "heal", shield: "shield", dodge: "dodge", mark: "mark", daze: "mark", transform: "transform", slash: "slash" };
 
 fetch("/cards.json").then((r) => r.json()).then((c) => (CARDS = c));
 
@@ -266,7 +266,7 @@ function renderGame() {
     action.innerHTML = `<p class="hint">Click one of your champions to use an ability. You can also play one card from your hand each turn.</p>`;
   }
 
-  $("energy").textContent = me.cardPlayed ? "🃏 Card played this turn" : "🃏 1 card to play this turn";
+  $("energy").textContent = me.cardsLeft > 0 ? `🃏 ${me.cardsLeft} card${me.cardsLeft === 1 ? "" : "s"} to play this turn` : "🃏 No cards left this turn";
   $("end-turn").disabled = !myTurn;
 
   // Your hand of utility cards.
@@ -276,11 +276,11 @@ function renderGame() {
     const u = CARDS.UTILITIES[id];
     const el = document.createElement("div");
     el.className = "util";
-    if (!myTurn || me.cardPlayed) el.classList.add("cant");
+    if (!myTurn || me.cardsLeft < 1) el.classList.add("cant");
     if (selected && selected.kind === "card" && selected.handIndex === handIndex) el.classList.add("selected");
     el.innerHTML = `<div class="art">${u.art}</div><div class="name">${esc(u.name)}</div><div class="desc">${esc(u.desc)}</div>`;
     el.onclick = () => {
-      if (!myTurn || me.cardPlayed) return;
+      if (!myTurn || me.cardsLeft < 1) return;
       if (u.target === "none") return send("playCard", { handIndex });
       selected = selected && selected.kind === "card" && selected.handIndex === handIndex ? null : { kind: "card", handIndex };
       renderGame();
@@ -366,6 +366,7 @@ function playEvents(events) {
     else if (e.type === "shield") popText(el, `🔰+${e.amount}`, "shield");
     else if (e.type === "dodge") popText(el, "DODGE!", "shield");
     else if (e.type === "mark") popText(el, "🎯", "damage");
+    else if (e.type === "daze") popText(el, "💫 DAZED", "damage");
     else if (e.type === "transform") {
       popText(el, "✨ TRANSFORM!", "heal");
       el.classList.add("glow-in");

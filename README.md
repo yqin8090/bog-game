@@ -9,7 +9,7 @@ A one-versus-one card game you play with friends in the browser.
   The champion at the back is your **leader**: their leader ability is active while they stand.
 - On your turn, each champion can use one ability. Strong abilities have a cooldown: you have
   to wait that many of your turns before using them again.
-- You can also play one utility card per turn (heals, shields, bombs...). You draw a card every turn.
+- You can also play one utility card per turn (heals, shields, bombs...), or two if your leader has Windfall. You draw a card every turn.
 - Attacks hit the enemy's front champions. When a champion's HP hits 0, that stronghold falls.
 - The back champion can attack, but can't be attacked until one of its front strongholds has fallen.
 - Knock out the enemy leader at the main stronghold to win!

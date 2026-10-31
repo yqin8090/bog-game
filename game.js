@@ -46,6 +46,7 @@ function createGame(players) {
     turn: null,
     turnNumber: 0,
     pending: null, // a Soul Link guess waiting for an answer
+    skipFor: null, // a player whose next turn is skipped (Wind version of turning tide)
     winner: null,
     log: [],
     events: [],
@@ -59,7 +60,8 @@ function createGame(players) {
       hand: [],
       deck: buildDeck(),
       turnsTaken: 0,
-      cardPlayed: false,
+      cardsPlayed: 0,
+      boosts: [], // damage boosts from Tailwind and Gust: { mult, from (caster's slot), until (turn number) }
     };
   });
   return game;
@@ -81,6 +83,17 @@ function champName(champ) {
 function leaderOf(game, pid) {
   const back = game.players[pid].slots.back;
   return back.hp > 0 ? CHAMPIONS[back.card].leader : null;
+}
+
+// How many utility cards you can play this turn.
+function cardLimit(game, pid) {
+  return leaderOf(game, pid) === "windfall" ? 2 : 1;
+}
+
+// The damage multiplier from active boosts. A boost skips the champion that cast it.
+function boostOf(game, pid, slot) {
+  const p = game.players[pid];
+  return p.boosts.reduce((mult, b) => (b.from !== slot && b.until >= p.turnsTaken ? mult * b.mult : mult), 1);
 }
 
 function passiveOf(champ) {
@@ -123,12 +136,14 @@ function chooseLineup(game, pid, lineup) {
     return "Pick 3 different champions from your offer.";
   }
   p.slots = {};
+  // Ironhide: while this leader stands at the back, every champion on the team gets +2 HP.
+  const hpBonus = CHAMPIONS[lineup.back].leader === "ironhide" ? 2 : 0;
   for (const s of SLOTS) {
     const def = CHAMPIONS[lineup[s]];
     p.slots[s] = {
-      card: lineup[s], hp: def.hp, maxHp: def.hp, shield: 0, acted: false,
+      card: lineup[s], hp: def.hp + hpBonus, maxHp: def.hp + hpBonus, shield: 0, acted: false,
       cooldowns: def.abilities.map(() => 0), used: [], swift: 0, form: false,
-      marked: false, bleeds: [], link: null,
+      marked: false, bleeds: [], link: null, dazed: false,
     };
   }
   if (game.order.every((id) => game.players[id].slots)) startPlaying(game);
@@ -149,14 +164,14 @@ function startTurn(game, pid) {
   const enemy = opponentOf(game, pid);
   const leader = leaderOf(game, pid);
   p.turnsTaken++;
-  p.cardPlayed = false;
+  p.cardsPlayed = 0;
 
   // The player who goes first doesn't draw on turn 1, to keep it fair.
   if (game.turnNumber > 1) drawCards(game, pid, 1 + (leader === "scholar" ? 1 : 0));
 
   for (const s of SLOTS) {
     const c = p.slots[s];
-    c.acted = false;
+    c.acted = !!c.dazed; // a dazed champion sits this turn out
     const tick = 1 + (leader === "haste" ? 1 : 0);
     c.cooldowns = c.cooldowns.map((cd) => Math.max(0, cd - tick));
   }
@@ -225,6 +240,7 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
       return 0;
     }
     if (from && leaderOf(game, attackerPid) === "rally") amount += 1;
+    if (from) amount *= boostOf(game, attackerPid, from);
     if (target.marked) {
       amount *= 2;
       target.marked = false;
@@ -265,6 +281,13 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
   return dealt;
 }
 
+// Gives a champion a shield, up to MAX_SHIELD.
+function addShield(game, pid, slot, amount) {
+  const c = game.players[pid].slots[slot];
+  c.shield = Math.min(MAX_SHIELD, c.shield + amount);
+  game.events.push({ type: "shield", owner: pid, slot, amount });
+}
+
 function checkTarget(game, pid, targetType, target) {
   if (target && !SLOTS.includes(target.slot)) return "Unknown stronghold.";
   const enemy = opponentOf(game, pid);
@@ -297,6 +320,11 @@ function applyEffect(game, pid, effect, targetType, target, from) {
       if (effect.bleed && dealt > 0 && alive(game, enemy, s)) {
         game.players[enemy].slots[s].bleeds.push({ amount: effect.bleed, turns: BLEED_TURNS });
       }
+      if (effect.daze && alive(game, enemy, s) && Math.random() < effect.daze) {
+        game.players[enemy].slots[s].dazed = true;
+        game.events.push({ type: "daze", owner: enemy, slot: s });
+        log(game, `💫 ${champName(game.players[enemy].slots[s])} is dazed! It can't act next turn.`);
+      }
     }
   }
   if (effect.drain) {
@@ -309,10 +337,12 @@ function applyEffect(game, pid, effect, targetType, target, from) {
     game.events.push({ type: "mark", owner: enemy, slot: target.slot });
   }
   if (effect.heal) heal(game, pid, target.slot, effect.heal);
-  if (effect.shield) {
-    const c = p.slots[target.slot];
-    c.shield = Math.min(MAX_SHIELD, c.shield + effect.shield);
-    game.events.push({ type: "shield", owner: pid, slot: target.slot, amount: effect.shield });
+  if (effect.shield) addShield(game, pid, target.slot, effect.shield);
+  if (effect.frontShield) {
+    for (const s of FRONT) if (alive(game, pid, s)) addShield(game, pid, s, effect.frontShield);
+  }
+  if (effect.teamShield) {
+    for (const s of SLOTS) if (alive(game, pid, s)) addShield(game, pid, s, effect.teamShield);
   }
   if (effect.transform && self) {
     const form = CHAMPIONS[self.card].form;
@@ -322,6 +352,12 @@ function applyEffect(game, pid, effect, targetType, target, from) {
     game.events.push({ type: "transform", owner: pid, slot: from });
     log(game, `✨ ${CHAMPIONS[self.card].name} transforms into ${form.name}!`);
   }
+  if (effect.allyBoost && from) {
+    p.boosts = p.boosts.filter((b) => b.until >= p.turnsTaken);
+    p.boosts.push({ mult: effect.allyBoost, from, until: p.turnsTaken + 1 });
+    log(game, `💨 ${p.name}'s other champions deal ${effect.allyBoost}x damage this turn and next.`);
+  }
+  if (effect.skipTurn) game.skipFor = enemy;
   if (effect.draw) drawCards(game, pid, effect.draw);
   if (effect.refresh) p.slots[target.slot].acted = false;
   if (effect.cooldownDown) {
@@ -359,6 +395,7 @@ function useAbility(game, pid, slot, index, target, choice) {
   if (!SLOTS.includes(slot)) return "Unknown stronghold.";
   const champ = p.slots[slot];
   if (champ.hp <= 0) return "That champion is knocked out.";
+  if (champ.dazed) return "That champion is dazed and can't act this turn.";
   if (champ.acted) return "That champion already acted this turn.";
   const ability = Number.isInteger(index) && abilitiesOf(champ)[index];
   if (!ability) return "Unknown ability.";
@@ -404,15 +441,16 @@ function playCard(game, pid, handIndex, target) {
   const err = checkTurn(game, pid);
   if (err) return err;
   const p = game.players[pid];
-  if (p.cardPlayed) return "You already played a card this turn.";
+  if (p.cardsPlayed >= cardLimit(game, pid)) return "You can't play any more cards this turn.";
   const id = Number.isInteger(handIndex) ? p.hand[handIndex] : null;
   const card = UTILITIES[id];
   if (!card) return "You don't have that card.";
   const targetErr = checkTarget(game, pid, card.target, target);
   if (targetErr) return targetErr;
   if (card.effect.refresh && !p.slots[target.slot].acted) return "That champion hasn't acted yet.";
+  if (card.effect.refresh && p.slots[target.slot].dazed) return "That champion is dazed and can't act this turn.";
 
-  p.cardPlayed = true;
+  p.cardsPlayed++;
   p.hand.splice(handIndex, 1);
   log(game, `${p.name} played ${card.name}.`);
   applyEffect(game, pid, card.effect, card.target, target, null);
@@ -421,7 +459,16 @@ function playCard(game, pid, handIndex, target) {
 function endTurn(game, pid) {
   const err = checkTurn(game, pid);
   if (err) return err;
-  startTurn(game, opponentOf(game, pid));
+  // Dazed champions recover once their owner's turn is over.
+  for (const s of SLOTS) game.players[pid].slots[s].dazed = false;
+  const next = opponentOf(game, pid);
+  if (game.skipFor === next) {
+    game.skipFor = null;
+    log(game, `⏭️ ${game.players[next].name}'s turn is skipped!`);
+    startTurn(game, pid);
+    return;
+  }
+  startTurn(game, next);
 }
 
 function forfeit(game, pid) {
@@ -447,6 +494,7 @@ function viewFor(game, pid) {
         slots[s] = {
           ...c,
           name: champName(c),
+          boostMult: boostOf(game, id, s),
           abilities: abilitiesOf(c).map((a, i) => ({
             name: a.name, short: a.short, desc: a.desc, cooldown: a.cooldown || 0, target: a.target, effect: a.effect, power: !!a.power,
             blocked: game.phase === "playing" ? abilityBlock(game, id, s, i) : null,
@@ -459,7 +507,7 @@ function viewFor(game, pid) {
       name: p.name,
       handCount: p.hand.length,
       deckCount: p.deck.length,
-      cardPlayed: p.cardPlayed,
+      cardsLeft: p.slots ? cardLimit(game, id) - p.cardsPlayed : 0,
       turnsTaken: p.turnsTaken,
       hand: mine ? p.hand : null,
       offered: mine ? p.offered : null,
