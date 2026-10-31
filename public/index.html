@@ -19,6 +19,56 @@
         <button id="join">Join</button>
       </div>
       <p id="error" class="error"></p>
+      <button id="how" class="secondary">How to play</button>
+    </section>
+
+    <section id="guide" hidden>
+      <button id="guide-back" class="secondary">Back</button>
+      <h2>How to play</h2>
+
+      <h3>The goal</h3>
+      <p>Each player has three strongholds: a left front, a right front, and a back where the leader stands. Each stronghold holds a champion. A champion's HP is how much damage it can take, and when it reaches 0, its stronghold falls. Knock down the enemy's back stronghold to win.</p>
+
+      <h3>Setting up</h3>
+      <p>Pick three champions from the ones you are offered. Put two at the front and your leader at the back. A leader's ability only works from the back.</p>
+
+      <h3>Your turn</h3>
+      <ul>
+        <li>You get 2 action points at the start of your turn. From the third turn of the player who goes first, you get 3 every turn.</li>
+        <li>Each champion can use its ability once per turn, and each ability costs 1 action point.</li>
+        <li>Playing a utility card costs 1 action point.</li>
+        <li>Unused action points are lost when you press End turn.</li>
+        <li>You draw one utility card at the start of each turn, up to 7 in your hand. The player who goes first doesn't draw on their first turn.</li>
+      </ul>
+
+      <h3>Attacking</h3>
+      <ul>
+        <li>Champions attack enemy champions with their abilities. A champion at the back can still attack.</li>
+        <li>Enemy fronts can always be attacked.</li>
+        <li>The enemy's back can't be attacked until one of their fronts has fallen.</li>
+      </ul>
+
+      <h3>Words on the cards</h3>
+      <ul>
+        <li><b>Shield</b> blocks damage before it reaches HP. A champion can hold up to 6.</li>
+        <li><b>Dazed</b> means the champion can't act on its owner's next turn.</li>
+        <li><b>Bleed</b> means the champion loses HP at the start of its owner's turn, for 3 turns.</li>
+        <li><b>Marked</b> means the next hit on the champion deals double damage.</li>
+        <li><b>Swift</b> gives a 10% chance to dodge each attack, for each stack, up to 3.</li>
+        <li><b>Linked</b> comes from Soul Link. The linked champion takes damage at the start of each of your turns.</li>
+        <li><b>Boosted</b> means the champion deals extra damage from Tailwind or Gust, for the rest of this turn and your next turn.</li>
+      </ul>
+
+      <h3>Sudden death</h3>
+      <p>Games can't go on forever. From turn 21, your champions take damage at the start of each of your turns, and the damage grows every 10 turns.</p>
+
+      <h2>Champions</h2>
+      <p class="hint">Each champion's abilities, passive, and leader ability are listed under its card. A leader's ability only works from the back.</p>
+      <div id="guide-champs" class="guide-champs"></div>
+
+      <h2>Utility cards</h2>
+      <p class="hint">Each one costs 1 action point to play.</p>
+      <ul id="guide-utils"></ul>
     </section>
 
     <section id="lobby" hidden>

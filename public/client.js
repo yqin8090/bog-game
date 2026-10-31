@@ -24,10 +24,10 @@ soundButton.onclick = () => {
 };
 showSoundState();
 
-const SCREENS = ["home", "lobby", "setup", "game"];
+const SCREENS = ["home", "lobby", "setup", "game", "guide"];
 function show(screen) {
   for (const id of SCREENS) $(id).hidden = id !== screen;
-  document.body.classList.toggle("wide", screen === "setup" || screen === "game");
+  document.body.classList.toggle("wide", screen === "setup" || screen === "game" || screen === "guide");
 }
 
 function handleReply(res) {
@@ -75,6 +75,48 @@ function showLobby() {
   $("waiting").textContent = isHost
     ? room.players.length < 2 ? "Waiting for a friend to join..." : ""
     : "Waiting for the host to start the game...";
+}
+
+// ---------- How to play ----------
+
+$("how").onclick = () => {
+  renderGuide();
+  show("guide");
+  window.scrollTo(0, 0);
+};
+$("guide-back").onclick = () => show("home");
+
+// The champion and utility details come from cards.js, so the guide always matches the game.
+function renderGuide() {
+  if (!CARDS) return;
+  $("guide-champs").replaceChildren(
+    ...Object.keys(CARDS.CHAMPIONS).map((id) => {
+      const wrap = document.createElement("div");
+      wrap.className = "guide-champ";
+      wrap.append(champCard(id));
+      const info = document.createElement("div");
+      info.className = "guide-info";
+      info.innerHTML = champInfo(id);
+      wrap.append(info);
+      return wrap;
+    })
+  );
+  $("guide-utils").innerHTML = Object.values(CARDS.UTILITIES)
+    .map((u) => `<li><b>${esc(u.name)}:</b> ${esc(u.desc)}</li>`)
+    .join("");
+}
+
+function champInfo(id) {
+  const c = CARDS.CHAMPIONS[id];
+  const leader = CARDS.LEADERS[c.leader];
+  const abilities = c.abilities
+    .map((a) => `<li><b>${esc(a.name)}</b> (${a.power ? "once per game" : "once per turn"}, 1 action point): ${esc(a.desc)}</li>`)
+    .join("");
+  return `
+    <p class="hint">${esc(CARDS.CLASSES[c.class])}, ${c.hp} HP</p>
+    <ul>${abilities}</ul>
+    ${c.passive ? `<p><b>Passive, ${esc(c.passive.name)}:</b> ${esc(c.passive.desc)}</p>` : ""}
+    <p><b>Leader, ${esc(leader.name)}:</b> ${esc(leader.desc)}</p>`;
 }
 
 // ---------- Drawing a champion card ----------
@@ -276,11 +318,11 @@ function renderGame() {
     const u = CARDS.UTILITIES[id];
     const el = document.createElement("div");
     el.className = "util";
-    if (!myTurn || me.actionsLeft < me.utilityCost) el.classList.add("cant");
+    if (!myTurn || me.actionsLeft < 1) el.classList.add("cant");
     if (selected && selected.kind === "card" && selected.handIndex === handIndex) el.classList.add("selected");
     el.innerHTML = `<div class="art">${u.art}</div><div class="name">${esc(u.name)}</div><div class="desc">${esc(u.desc)}</div>`;
     el.onclick = () => {
-      if (!myTurn || me.actionsLeft < me.utilityCost) return;
+      if (!myTurn || me.actionsLeft < 1) return;
       if (u.target === "none") return send("playCard", { handIndex });
       selected = selected && selected.kind === "card" && selected.handIndex === handIndex ? null : { kind: "card", handIndex };
       renderGame();

@@ -61,7 +61,8 @@ const LEADERS = {
   scholar: { name: "Scholar", short: "Draw an extra utility", desc: "Draw an extra utility card every turn." },
   lifeline: { name: "Lifeline", short: "Leader heals 2 each turn", desc: "At the start of your turn, this leader heals 2." },
   ironhide: { name: "Ironhide", short: "All champions +2 HP", desc: "While this leader is at the back, all your champions start with 2 more HP." },
-  windfall: { name: "Windfall", short: "Utility cards cost no action", desc: "Utility cards cost no action points while this leader is at the back." },
+  windfall: { name: "Windfall", short: "3 action points every turn", desc: "While this leader is at the back, you have 3 action points every turn, from your first turn." },
+  pack: { name: "Pack Rage", short: "Below half HP: 1.5x damage", desc: "While this leader is at the back, your champions below half HP deal 1.5x damage." },
 };
 
 const CHAMPIONS = {
@@ -83,7 +84,7 @@ const CHAMPIONS = {
         1: { name: "Wolf Claws", short: "4 damage + bleed", target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
       },
     },
-    leader: "rally",
+    leader: "pack",
   },
   abbas: {
     name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", rarity: "holo", hp: 10, art: "💀",

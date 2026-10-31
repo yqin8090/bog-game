@@ -309,6 +309,15 @@ p { margin: 0; }
 .pick-slot .tcg { --w: 170px; }
 .board .tcg { --w: 168px; }
 
+/* ---------- How to play ---------- */
+#guide h3 { margin: 4px 0 -4px; color: var(--accent); font-size: 18px; }
+#guide ul { display: grid; gap: 6px; }
+.guide-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.guide-champ { display: grid; justify-items: center; align-content: start; gap: 10px; }
+.guide-champ .tcg { --w: 185px; }
+.guide-info { width: 100%; display: grid; gap: 6px; padding: 10px 12px; border-radius: 8px; background: #2a2e40; font-size: 14px; line-height: 1.4; }
+.guide-info ul { padding-left: 18px; }
+
 /* ---------- Setup ---------- */
 #offered { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .lineup { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

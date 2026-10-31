@@ -89,14 +89,13 @@ function leaderOf(game, pid) {
   return back.hp > 0 ? CHAMPIONS[back.card].leader : null;
 }
 
-// Action points each turn: 2, or 3 once the player who started the game has had three turns.
-function actionPointsFor(game) {
-  return game.players[game.order[0]].turnsTaken >= RAISE_AT_TURN ? RAISED_ACTIONS : BASE_ACTIONS;
-}
-
-// Action points a utility card costs. Windfall makes them free.
-function utilityCost(game, pid) {
-  return leaderOf(game, pid) === "windfall" ? 0 : 1;
+// Action points for a player's turn. Windfall gives 3 from the first turn. Otherwise it's 2, or 3 once the
+// player who started the game has had three turns. Haste adds 1.
+function actionPointsFor(game, pid) {
+  const leader = leaderOf(game, pid);
+  if (leader === "windfall") return RAISED_ACTIONS;
+  const base = game.players[game.order[0]].turnsTaken >= RAISE_AT_TURN ? RAISED_ACTIONS : BASE_ACTIONS;
+  return base + (leader === "haste" ? 1 : 0);
 }
 
 // The damage multiplier from active boosts. A boost skips the champion that cast it.
@@ -177,8 +176,7 @@ function startTurn(game, pid) {
   // The player who goes first doesn't draw on turn 1, to keep it fair.
   if (game.turnNumber > 1) drawCards(game, pid, 1 + (leader === "scholar" ? 1 : 0));
 
-  // Action points for this turn. Haste adds one.
-  p.actionMax = actionPointsFor(game) + (leader === "haste" ? 1 : 0);
+  p.actionMax = actionPointsFor(game, pid);
   p.actions = p.actionMax;
   for (const s of SLOTS) {
     const c = p.slots[s];
@@ -249,6 +247,7 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
       return 0;
     }
     if (from && leaderOf(game, attackerPid) === "rally") amount += 1;
+    if (from && leaderOf(game, attackerPid) === "pack" && attacker.hp < attacker.maxHp / 2) amount *= 1.5;
     if (from) amount *= boostOf(game, attackerPid, from);
     if (target.marked) {
       amount *= 2;
@@ -447,8 +446,7 @@ function playCard(game, pid, handIndex, target) {
   const err = checkTurn(game, pid);
   if (err) return err;
   const p = game.players[pid];
-  const cost = utilityCost(game, pid);
-  if (p.actions < cost) return "You have no action points left this turn.";
+  if (p.actions < 1) return "You have no action points left this turn.";
   const id = Number.isInteger(handIndex) ? p.hand[handIndex] : null;
   const card = UTILITIES[id];
   if (!card) return "You don't have that card.";
@@ -457,7 +455,7 @@ function playCard(game, pid, handIndex, target) {
   if (card.effect.refresh && !p.slots[target.slot].acted) return "That champion hasn't acted yet.";
   if (card.effect.refresh && p.slots[target.slot].dazed) return "That champion is dazed and can't act this turn.";
 
-  p.actions -= cost;
+  p.actions--;
   p.hand.splice(handIndex, 1);
   log(game, `${p.name} played ${card.name}.`);
   applyEffect(game, pid, card.effect, card.target, target, null);
@@ -516,7 +514,6 @@ function viewFor(game, pid) {
       deckCount: p.deck.length,
       actionsLeft: p.actions,
       actionsMax: p.actionMax,
-      utilityCost: p.slots ? utilityCost(game, id) : 1,
       turnsTaken: p.turnsTaken,
       hand: mine ? p.hand : null,
       offered: mine ? p.offered : null,
