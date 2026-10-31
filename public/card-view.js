@@ -3,10 +3,10 @@
 // Sizes inside a card are in cqw (percent of the card's own width), so one design fits any size.
 // Set --w on a card, or on a parent, to choose how wide it is.
 const CardView = (() => {
-  // Each type sets the card's colors and the icon in its orb.
+  // Each type sets the card's colors and the icon in its orb. Lightning and darkness have no icon.
   const TYPES = {
-    lightning: { icon: "⚡", frame: "#f5c518", deep: "#6b4f00", ink: "#2a1d00", glow: "#fff4a8" },
-    darkness: { icon: "🌙", frame: "#7150b8", deep: "#120a1f", ink: "#ffffff", glow: "#cdb9ff" },
+    lightning: { icon: "", frame: "#f5c518", deep: "#6b4f00", ink: "#2a1d00", glow: "#fff4a8" },
+    darkness: { icon: "", frame: "#7150b8", deep: "#120a1f", ink: "#ffffff", glow: "#cdb9ff" },
     fire: { icon: "🔥", frame: "#ea5a2a", deep: "#5a1a05", ink: "#ffffff", glow: "#ffd0a8" },
     metal: { icon: "⚙️", frame: "#a5b7c9", deep: "#33414e", ink: "#14202b", glow: "#ffffff" },
     grass: { icon: "🌿", frame: "#4caf50", deep: "#12381a", ink: "#ffffff", glow: "#d4ffa8" },
