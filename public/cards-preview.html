@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BoG cards</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .gallery { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+    .gallery .tcg { --w: 280px; }
+  </style>
+</head>
+<body class="wide">
+  <main>
+    <h1>BoG cards</h1>
+    <p class="hint">Hover over a card to see the holo shine. Every champion is shown full size here.</p>
+    <div id="gallery" class="gallery"></div>
+  </main>
+
+  <script src="card-view.js"></script>
+  <script>
+    fetch("/cards.json")
+      .then((r) => r.json())
+      .then((defs) => {
+        const gallery = document.getElementById("gallery");
+        const friends = ["ruhaan", "abbas"];
+        const others = Object.keys(defs.CHAMPIONS).filter((id) => !friends.includes(id));
+        for (const id of [...friends, ...others]) {
+          gallery.appendChild(CardView.render(defs, id, null, { isLeader: true }));
+        }
+
+        // Ruhaan after he turns into Simba.
+        const r = defs.CHAMPIONS.ruhaan;
+        const simba = {
+          name: r.form.name, hp: 20, maxHp: 20, shield: 0, swift: 2, marked: false, bleeds: [], link: null,
+          form: true,
+          abilities: r.abilities.map((a, i) => {
+            const x = r.form.replace[i] || a;
+            return { name: x.name, desc: x.desc, cooldown: x.cooldown || 0, target: x.target, effect: x.effect, power: !!x.power, blocked: null };
+          }),
+        };
+        gallery.insertBefore(CardView.render(defs, "ruhaan", simba, { isLeader: true }), gallery.children[1]);
+      });
+  </script>
+</body>
+</html>

@@ -3,12 +3,15 @@
 // CHAMPIONS sit at your strongholds. Each one has:
 //   name, title  - shown on the card
 //   class        - frontliner, warrior, assassin, support or ranger
+//   type         - lightning, darkness, fire, metal, grass, fighting or psychic.
+//                  Sets the card's colors and its orb icon (see card-view.js)
+//   rarity       - "holo" adds a shiny foil effect; "common" doesn't
 //   hp           - how much damage it can take before its stronghold falls
-//   color        - the card's main color
 //   art          - an emoji shown as the picture when there's no image
-//   image        - optional: a picture file in public/cards/, like "sam.jpg"
+//   image        - optional: a picture in public/cards/, about 600x360 pixels, like "sam-card.jpg"
 //   abilities    - what it can do. Each champion can use one ability per turn.
-//   passive      - optional: always-on powers
+//   power        - an ability marked power: true is shown as a POWER band, not an attack
+//   passive      - optional: always-on powers, with a name and a description
 //   form         - optional: a transformation (like Ruhaan turning into Simba)
 //   leader       - a bonus that only works while this champion is at the back
 //
@@ -58,18 +61,18 @@ const LEADERS = {
 const CHAMPIONS = {
   // ---------- Hunter's friends ----------
   ruhaan: {
-    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", hp: 10, color: "#2b6cb0", art: "🐾",
-    image: "ruhaan.jpg",
+    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", type: "lightning", rarity: "holo", hp: 10, art: "🐾",
+    image: "cards/ruhaan-card.jpg",
     abilities: [
       { name: "Neuro Scan", cooldown: 2, target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
       { name: "Paw Swipe", cooldown: 1, target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
       {
-        name: "Simba Form", once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
+        name: "Simba Form", power: true, once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
         desc: "Turn into Simba! +10 max HP and HP, Swift dodge is doubled (up to 60%), Paw Swipe becomes Wolf Claws. Needs under half HP, after 4 turns.",
       },
     ],
     form: {
-      name: "Simba Form", image: "ruhaan-simba.jpg", bonusHp: 10, swiftMultiplier: 2,
+      name: "Simba Form", image: "cards/ruhaan-form-card.jpg", bonusHp: 10, swiftMultiplier: 2,
       replace: {
         1: { name: "Wolf Claws", cooldown: 1, target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
       },
@@ -77,10 +80,10 @@ const CHAMPIONS = {
     leader: "rally",
   },
   abbas: {
-    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", hp: 10, color: "#44337a", art: "💀",
-    image: "abbas.jpg",
+    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", type: "darkness", rarity: "holo", hp: 10, art: "💀",
+    image: "cards/abbas-card.jpg",
     passive: {
-      lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
+      name: "Reaper's Hunger", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
       desc: "Heals 50% of damage he deals, and can heal past max HP. Takes 1.5x damage from the enemy leader.",
     },
     abilities: [
@@ -92,7 +95,7 @@ const CHAMPIONS = {
 
   // ---------- Made-up champions (replace with more friends!) ----------
   blaze: {
-    name: "Blaze", title: "The Firestarter", class: "ranger", hp: 12, color: "#e85d04", art: "🔥",
+    name: "Blaze", title: "The Firestarter", class: "ranger", type: "fire", rarity: "common", hp: 12, art: "🔥",
     abilities: [
       { name: "Fireball", cooldown: 1, target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
       { name: "Inferno", cooldown: 2, target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
@@ -100,7 +103,7 @@ const CHAMPIONS = {
     leader: "rally",
   },
   ironwall: {
-    name: "Ironwall", title: "The Unbreakable", class: "frontliner", hp: 16, color: "#6c757d", art: "🛡️",
+    name: "Ironwall", title: "The Unbreakable", class: "frontliner", type: "metal", rarity: "common", hp: 16, art: "🛡️",
     abilities: [
       { name: "Bash", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
       { name: "Guard", cooldown: 1, target: "ally", effect: { shield: 4 }, desc: "Give a champion a 4 shield." },
@@ -108,7 +111,7 @@ const CHAMPIONS = {
     leader: "bulwark",
   },
   sage: {
-    name: "Sage", title: "The Healer", class: "support", hp: 11, color: "#2a9d8f", art: "🌿",
+    name: "Sage", title: "The Healer", class: "support", type: "grass", rarity: "common", hp: 11, art: "🌿",
     abilities: [
       { name: "Mend", cooldown: 1, target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4." },
       { name: "Zap", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -116,7 +119,7 @@ const CHAMPIONS = {
     leader: "fortify",
   },
   shade: {
-    name: "Shade", title: "The Shadow", class: "assassin", hp: 10, color: "#5a189a", art: "🗡️",
+    name: "Shade", title: "The Shadow", class: "assassin", type: "darkness", rarity: "common", hp: 10, art: "🗡️",
     abilities: [
       { name: "Backstab", cooldown: 2, target: "enemy", effect: { damage: 5 }, desc: "Deal 5 damage." },
       { name: "Jab", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -124,7 +127,7 @@ const CHAMPIONS = {
     leader: "thorns",
   },
   spark: {
-    name: "Spark", title: "The Storm", class: "ranger", hp: 12, color: "#0077b6", art: "⚡",
+    name: "Spark", title: "The Storm", class: "ranger", type: "lightning", rarity: "common", hp: 12, art: "⚡",
     abilities: [
       { name: "Chain Lightning", cooldown: 3, target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
       { name: "Static", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -132,7 +135,7 @@ const CHAMPIONS = {
     leader: "haste",
   },
   brute: {
-    name: "Brute", title: "The Wrecking Ball", class: "warrior", hp: 14, color: "#9d0208", art: "👊",
+    name: "Brute", title: "The Wrecking Ball", class: "warrior", type: "fighting", rarity: "common", hp: 14, art: "👊",
     abilities: [
       { name: "Smash", cooldown: 2, target: "enemy", effect: { damage: 6 }, desc: "Deal 6 damage." },
       { name: "Punch", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -140,7 +143,7 @@ const CHAMPIONS = {
     leader: "thorns",
   },
   leech: {
-    name: "Leech", title: "The Thirsty", class: "assassin", hp: 12, color: "#386641", art: "🦇",
+    name: "Leech", title: "The Thirsty", class: "assassin", type: "darkness", rarity: "common", hp: 12, art: "🦇",
     abilities: [
       { name: "Drain", cooldown: 1, target: "enemy", effect: { drain: 3 }, desc: "Deal 3 damage and heal Leech 3." },
       { name: "Bite", cooldown: 0, target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -148,7 +151,7 @@ const CHAMPIONS = {
     leader: "lifeline",
   },
   oracle: {
-    name: "Oracle", title: "The Seer", class: "support", hp: 11, color: "#b5179e", art: "🔮",
+    name: "Oracle", title: "The Seer", class: "support", type: "psychic", rarity: "common", hp: 11, art: "🔮",
     abilities: [
       { name: "Foresight", cooldown: 1, target: "none", effect: { draw: 1 }, desc: "Draw a utility card." },
       { name: "Bolt", cooldown: 1, target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage." },

@@ -447,7 +447,7 @@ function viewFor(game, pid) {
           ...c,
           name: champName(c),
           abilities: abilitiesOf(c).map((a, i) => ({
-            name: a.name, desc: a.desc, cooldown: a.cooldown || 0, target: a.target,
+            name: a.name, desc: a.desc, cooldown: a.cooldown || 0, target: a.target, effect: a.effect, power: !!a.power,
             blocked: game.phase === "playing" ? abilityBlock(game, id, s, i) : null,
           })),
         };

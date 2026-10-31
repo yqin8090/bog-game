@@ -73,53 +73,7 @@ function cooldownText(a) {
 
 // state is the champion's live info during a game (null when just showing the card).
 function champCard(cardId, state, opts = {}) {
-  const c = CARDS.CHAMPIONS[cardId];
-  const leader = CARDS.LEADERS[c.leader];
-  const formOn = state && state.form;
-  const abilities = state ? state.abilities : c.abilities;
-  const el = document.createElement("div");
-  el.className = "card champ";
-  el.style.setProperty("--card", c.color);
-  const hp = state ? state.hp : c.hp;
-  const maxHp = state ? state.maxHp : c.hp;
-  const down = state && hp <= 0;
-  if (down) el.classList.add("down");
-  if (state && state.acted && !down) el.classList.add("acted");
-  if (formOn) el.classList.add("transformed");
-  el.title = [
-    ...abilities.map((a) => `${a.name} (${cooldownText(a)}): ${a.desc}`),
-    c.passive ? `Passive: ${c.passive.desc}` : null,
-    `Leader - ${leader.name}: ${leader.desc}`,
-  ].filter(Boolean).join("\n");
-
-  const image = formOn ? c.form.image : c.image;
-  const art = image ? `<img src="cards/${esc(image)}" alt="">` : `<span>${esc(c.art)}</span>`;
-  const badges = [];
-  if (state) {
-    if (state.shield) badges.push(`<span title="Shield blocks damage">🔰 ${fmt(state.shield)}</span>`);
-    if (state.swift) {
-      const mult = formOn ? c.form.swiftMultiplier : 1;
-      badges.push(`<span title="Chance to dodge attacks">🐾 ${state.swift} · ${state.swift * 10 * mult}% dodge</span>`);
-    }
-    if (state.marked) badges.push(`<span class="bad" title="Next hit deals double damage">🎯 Weak spot</span>`);
-    if (state.bleeds.length) badges.push(`<span class="bad" title="Loses HP every turn">🩸 Bleeding</span>`);
-    if (opts.linked) badges.push(`<span class="bad" title="Takes damage every turn">⛓️ Linked</span>`);
-    if (state.link) badges.push(`<span title="Soul Link is active">⛓️ Linking</span>`);
-  }
-  const hpPct = Math.min(100, (hp / maxHp) * 100);
-  const over = hp > maxHp ? `<div class="hp-over" style="width:${Math.min(100, ((hp - maxHp) / maxHp) * 100)}%"></div>` : "";
-
-  el.innerHTML = `
-    <div class="card-art">${art}</div>
-    ${badges.length ? `<div class="badges">${badges.join("")}</div>` : ""}
-    <div class="card-name">${esc(state ? state.name : c.name)}</div>
-    <div class="card-title">${esc(CARDS.CLASSES[c.class] || "")} · ${esc(c.title)}</div>
-    <div class="hp"><div class="hp-fill" style="width:${hpPct}%"></div>${over}<span>❤️ ${fmt(hp)}/${fmt(maxHp)}</span></div>
-    ${opts.compact ? "" : `<ul class="abilities">${abilities.map((a) => `<li><b>${esc(a.name)}</b> <i>(${cooldownText(a)})</i> ${esc(a.desc)}</li>`).join("")}</ul>`}
-    ${c.passive && !opts.compact ? `<div class="passive">✦ <b>Passive:</b> ${esc(c.passive.desc)}</div>` : ""}
-    ${opts.compact && !opts.isLeader ? "" : `<div class="leader-line ${opts.isLeader ? "active" : ""}">👑 <b>${esc(leader.name)}:</b> ${esc(leader.desc)}</div>`}
-    ${down ? `<div class="fallen">FALLEN</div>` : ""}`;
-  return el;
+  return CardView.render(CARDS, cardId, state, opts);
 }
 
 // ---------- Setup: pick 3 champions ----------
@@ -144,7 +98,7 @@ function renderSetup() {
   for (const slotEl of document.querySelectorAll(".pick-slot")) {
     const slot = slotEl.dataset.slot;
     const id = lineup[slot];
-    slotEl.querySelector(".card")?.remove();
+    slotEl.querySelector(".tcg")?.remove();
     if (id) slotEl.appendChild(champCard(id, null, { isLeader: slot === "back", compact: true }));
     slotEl.onclick = () => {
       if (me.picked) return;
@@ -305,10 +259,10 @@ function renderGame() {
   me.hand.forEach((id, handIndex) => {
     const u = CARDS.UTILITIES[id];
     const el = document.createElement("div");
-    el.className = "card utility";
+    el.className = "util";
     if (!myTurn || me.cardPlayed) el.classList.add("cant");
     if (selected && selected.kind === "card" && selected.handIndex === handIndex) el.classList.add("selected");
-    el.innerHTML = `<div class="card-art"><span>${u.art}</span></div><div class="card-name">${esc(u.name)}</div><div class="card-desc">${esc(u.desc)}</div>`;
+    el.innerHTML = `<div class="art">${u.art}</div><div class="name">${esc(u.name)}</div><div class="desc">${esc(u.desc)}</div>`;
     el.onclick = () => {
       if (!myTurn || me.cardPlayed) return;
       if (u.target === "none") return send("playCard", { handIndex });
@@ -359,7 +313,7 @@ $("end-turn").onclick = () => send("endTurn");
 // ---------- Animations ----------
 
 function cardEl(owner, slot) {
-  return document.querySelector(`.board .card[data-owner="${owner}"][data-slot="${slot}"]`);
+  return document.querySelector(`.board .tcg[data-owner="${owner}"][data-slot="${slot}"]`);
 }
 
 function popText(el, text, type) {
