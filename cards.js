@@ -12,7 +12,8 @@
 //   short        - optional one-line text shown on the card; desc goes in the tooltip
 //   power        - an ability marked power: true is shown as a POWER band, not an attack
 //   passive      - optional: always-on powers, with a name and a description. vsClass: { class, mult }
-//                  multiplies the damage this champion deals to champions of that class
+//                  multiplies the damage this champion deals to champions of that class.
+//                  respawn: { chance, hp } lets it rise once per game when knocked out, with hp as a share of its max HP
 //   form         - optional: a transformation (like Ruhaan turning into Simba)
 //   leader       - a bonus that only works while this champion is at the back
 //
@@ -147,6 +148,20 @@ const CHAMPIONS = {
       desc: "Deals 2x damage to frontliner champions.",
     },
     leader: "vitality",
+  },
+  carlos: {
+    name: "Carlos", title: "The Aviator", class: "warrior", rarity: "holo", hp: 15, art: "⚡",
+    image: "cards/carlos-card.jpg", artShift: 16, credit: "Art: Gemini",
+    abilities: [
+      { name: "Prism Punch", short: "3 damage", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
+      { name: "Light Beam", short: "A beam of light", target: "enemy", effect: { damage: 6 }, cooldown: 2, desc: "Fire a beam of light for 6 damage." },
+      { name: "Spectrum Wave", short: "5 damage to every enemy", target: "allEnemies", effect: { damage: 5 }, cooldown: 2, desc: "Send a wave of light for 5 damage to every enemy champion you can attack." },
+    ],
+    passive: {
+      name: "Rise Again", short: "50% to rise at half HP", respawn: { chance: 0.5, hp: 0.5 },
+      desc: "When this champion is knocked out, it has a 50% chance to rise again with half its HP. Works once per game.",
+    },
+    leader: "haste",
   },
 
   // ---------- Made-up champions (replace with more friends!) ----------

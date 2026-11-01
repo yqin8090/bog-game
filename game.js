@@ -153,7 +153,7 @@ function chooseLineup(game, pid, lineup) {
     const selfBonus = s === "back" && backLeader === "vitality" ? 10 : 0;
     p.slots[s] = {
       card: lineup[s], hp: def.hp + hpBonus + selfBonus, maxHp: def.hp + hpBonus + selfBonus, shield: 0, acted: false,
-      used: [], readyAt: {}, swift: 0, form: false,
+      used: [], readyAt: {}, swift: 0, form: false, respawned: false,
       marked: false, bleeds: [], link: null, dazed: false,
     };
   }
@@ -270,6 +270,15 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
   const dealt = round(amount - blocked);
   target.hp = round(Math.max(0, target.hp - dealt));
   game.events.push({ type: "damage", owner: targetPid, slot, amount: dealt, blocked, reason });
+
+  // Rise Again (Carlos): a champion that would be knocked out may get back up once per game, at a share of its HP.
+  const respawn = passiveOf(target).respawn;
+  if (target.hp === 0 && respawn && !target.respawned && Math.random() < respawn.chance) {
+    target.respawned = true;
+    target.hp = round(target.maxHp * respawn.hp);
+    game.events.push({ type: "heal", owner: targetPid, slot, amount: target.hp });
+    log(game, `✨ ${champName(target)} rises again!`);
+  }
 
   if (target.hp === 0) {
     target.link = null;
