@@ -95,7 +95,7 @@ const CardView = (() => {
     el.innerHTML = `
       <div class="tcg-inner">
         <div class="tcg-art">
-          ${image ? `<img src="${esc(image)}" alt="" draggable="false">` : `<span class="tcg-emoji">${esc(c.art)}</span>`}
+          ${image ? `<img src="${esc(image)}" alt="" draggable="false"${c.artShift ? ` style="top:${c.artShift}%;height:${100 - c.artShift}%"` : ""}>` : `<span class="tcg-emoji">${esc(c.art)}</span>`}
           <div class="tcg-foil"></div>
         </div>
         <div class="tcg-shade"></div>

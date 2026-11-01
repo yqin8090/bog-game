@@ -7,6 +7,7 @@
 //   hp           - how much damage it can take before its stronghold falls
 //   art          - an emoji shown as the picture when there's no image
 //   image        - optional: a picture in public/cards/, about 600x360 pixels, like "sam-card.jpg"
+//   artShift     - optional: moves the picture down, as a percent of the card height, so its top clears the name bar
 //   abilities    - what it can do. Each champion can use its ability once per turn, and each use costs 1 action point.
 //   short        - optional one-line text shown on the card; desc goes in the tooltip
 //   power        - an ability marked power: true is shown as a POWER band, not an attack
@@ -131,7 +132,7 @@ const CHAMPIONS = {
   },
   vianoc: {
     name: "Vianoc", title: "The Spearman", class: "warrior", rarity: "holo", hp: 20, art: "🔱",
-    image: "cards/vianoc-card.jpg", credit: "Art: Gemini",
+    image: "cards/vianoc-card.jpg", artShift: 16, credit: "Art: Gemini",
     abilities: [
       { name: "Pierce", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
       { name: "Sunder", short: "3 damage, 3 to their leader", target: "enemy", effect: { damage: 3, leaderDamage: 3 }, cooldown: 2, desc: "Deal 3 damage to an enemy champion and 3 damage to their leader. The leader only takes it if it can be attacked." },
