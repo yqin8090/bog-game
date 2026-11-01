@@ -131,6 +131,7 @@ const CHAMPIONS = {
   },
   vianoc: {
     name: "Vianoc", title: "The Spearman", class: "warrior", rarity: "holo", hp: 20, art: "🔱",
+    image: "cards/vianoc-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Pierce", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
       { name: "Sunder", short: "3 damage, 3 to their leader", target: "enemy", effect: { damage: 3, leaderDamage: 3 }, cooldown: 2, desc: "Deal 3 damage to an enemy champion and 3 damage to their leader. The leader only takes it if it can be attacked." },
