@@ -14,7 +14,7 @@
 //   passive      - optional: always-on powers, with a name and a description. vsClass: { class, mult }
 //                  multiplies the damage this champion deals to champions of that class.
 //                  respawn: { chance, hp } lets it rise once per game when knocked out, with hp as a share of its max HP
-//   form         - optional: a transformation (like Ruhaan turning into Simba)
+//   form         - optional: a transformation (like Rahoon turning into Simba)
 //   leader       - a bonus that only works while this champion is at the back
 //
 // Ability fields:
@@ -77,7 +77,7 @@ const LEADERS = {
 const CHAMPIONS = {
   // ---------- Hunter's friends ----------
   ruhaan: {
-    name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", rarity: "holo", hp: 10, art: "🐾",
+    name: "Rahoon", title: "The Pack Brain", class: "warrior", rarity: "holo", hp: 10, art: "🐾",
     image: "cards/ruhaan-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Neuro Scan", short: "Next hit deals double", target: "anyEnemy", effect: { mark: true }, cooldown: 2, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
@@ -96,7 +96,7 @@ const CHAMPIONS = {
     leader: "pack",
   },
   abbas: {
-    name: "Abbas Shabbir", title: "The Reaper", class: "frontliner", rarity: "holo", hp: 10, art: "💀",
+    name: '"Wemby"', title: "The Reaper", class: "frontliner", rarity: "holo", hp: 10, art: "💀",
     image: "cards/abbas-card.jpg", credit: "Art: Gemini",
     passive: {
       name: "Reaper's Hunger", short: "Heals half of damage", lifesteal: 0.5, overheal: true, leaderWeakness: 1.5,
@@ -110,7 +110,7 @@ const CHAMPIONS = {
   },
 
   matthew: {
-    name: "Matthew Chen", title: "The Iron Ape", class: "frontliner", rarity: "holo", hp: 30, art: "🦍",
+    name: "Skies", title: "The Iron Ape", class: "frontliner", rarity: "holo", hp: 30, art: "🦍",
     image: "cards/matthew-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Punch", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
@@ -121,7 +121,7 @@ const CHAMPIONS = {
     leader: "ironhide",
   },
   ted: {
-    name: "Ted Wang", title: "The Windcaller", class: "support", rarity: "holo", hp: 15, art: "🌬️",
+    name: "Teddy", title: "The Windcaller", class: "support", rarity: "holo", hp: 15, art: "🌬️",
     image: "cards/ted-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Gale Lunge", short: "2 damage, 10% to daze", target: "enemy", effect: { damage: 2, daze: 0.1 }, cooldown: 1, desc: "Deal 2 damage. 10% chance to daze the enemy, who can't act next turn." },
@@ -164,71 +164,6 @@ const CHAMPIONS = {
     leader: "haste",
   },
 
-  // ---------- Made-up champions (replace with more friends!) ----------
-  blaze: {
-    name: "Blaze", title: "The Firestarter", class: "ranger", rarity: "common", hp: 12, art: "🔥",
-    abilities: [
-      { name: "Fireball", target: "enemy", effect: { damage: 4 }, cooldown: 1, desc: "Deal 4 damage." },
-      { name: "Inferno", short: "2 damage to each enemy", target: "allEnemies", effect: { damage: 2 }, cooldown: 2, desc: "Deal 2 damage to every enemy you can attack." },
-    ],
-    leader: "rally",
-  },
-  ironwall: {
-    name: "Ironwall", title: "The Unbreakable", class: "frontliner", rarity: "common", hp: 16, art: "🛡️",
-    abilities: [
-      { name: "Bash", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-      { name: "Guard", target: "ally", effect: { shield: 4 }, cooldown: 1, desc: "Give a champion a 4 shield." },
-    ],
-    leader: "bulwark",
-  },
-  sage: {
-    name: "Sage", title: "The Healer", class: "support", rarity: "common", hp: 11, art: "🌿",
-    abilities: [
-      { name: "Mend", target: "ally", effect: { heal: 4 }, cooldown: 1, desc: "Heal a champion 4." },
-      { name: "Zap", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-    ],
-    leader: "fortify",
-  },
-  shade: {
-    name: "Shade", title: "The Shadow", class: "assassin", rarity: "common", hp: 10, art: "🗡️",
-    abilities: [
-      { name: "Backstab", target: "enemy", effect: { damage: 5 }, cooldown: 2, desc: "Deal 5 damage." },
-      { name: "Jab", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-    ],
-    leader: "thorns",
-  },
-  spark: {
-    name: "Spark", title: "The Storm", class: "ranger", rarity: "common", hp: 12, art: "⚡",
-    abilities: [
-      { name: "Chain Lightning", short: "3 damage to each enemy", target: "allEnemies", effect: { damage: 3 }, cooldown: 2, desc: "Deal 3 damage to every enemy you can attack." },
-      { name: "Static", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-    ],
-    leader: "haste",
-  },
-  brute: {
-    name: "Brute", title: "The Wrecking Ball", class: "warrior", rarity: "common", hp: 14, art: "👊",
-    abilities: [
-      { name: "Smash", target: "enemy", effect: { damage: 6 }, cooldown: 2, desc: "Deal 6 damage." },
-      { name: "Punch", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-    ],
-    leader: "thorns",
-  },
-  leech: {
-    name: "Leech", title: "The Thirsty", class: "assassin", rarity: "common", hp: 12, art: "🦇",
-    abilities: [
-      { name: "Drain", target: "enemy", effect: { drain: 3 }, cooldown: 1, desc: "Deal 3 damage and heal Leech 3." },
-      { name: "Bite", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-    ],
-    leader: "lifeline",
-  },
-  oracle: {
-    name: "Oracle", title: "The Seer", class: "support", rarity: "common", hp: 11, art: "🔮",
-    abilities: [
-      { name: "Foresight", target: "none", effect: { draw: 1 }, cooldown: 1, desc: "Draw a utility card." },
-      { name: "Bolt", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
-    ],
-    leader: "scholar",
-  },
 };
 
 // UTILITY cards are played from your hand. Each one costs 1 action point. "count" is how many are in each player's deck.

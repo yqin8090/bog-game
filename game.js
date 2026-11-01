@@ -39,8 +39,8 @@ function buildDeck() {
 }
 
 function createGame(players) {
-  // Each player is offered different champions and picks 3 of them.
-  const roster = shuffle(Object.keys(CHAMPIONS));
+  // Each player is offered a random set of champions and picks 3 of them. With few champions, offers can overlap.
+  const roster = Object.keys(CHAMPIONS);
   const game = {
     phase: "setup", // "setup" -> "playing" -> "over"
     order: players.map((p) => p.id),
@@ -54,11 +54,11 @@ function createGame(players) {
     log: [],
     events: [],
   };
-  players.forEach((p, i) => {
+  players.forEach((p) => {
     game.players[p.id] = {
       id: p.id,
       name: p.name,
-      offered: roster.slice(i * CHAMPIONS_OFFERED, (i + 1) * CHAMPIONS_OFFERED),
+      offered: shuffle(roster).slice(0, CHAMPIONS_OFFERED),
       slots: null, // { left, right, back } once chosen
       hand: [],
       deck: buildDeck(),
