@@ -145,12 +145,15 @@ function chooseLineup(game, pid, lineup) {
   }
   p.slots = {};
   // Ironhide: while this leader stands at the back, every champion on the team gets +2 HP.
-  const hpBonus = CHAMPIONS[lineup.back].leader === "ironhide" ? 2 : 0;
+  // Vitality: while this leader stands at the back, only the leader gets +10 HP.
+  const backLeader = CHAMPIONS[lineup.back].leader;
+  const hpBonus = backLeader === "ironhide" ? 2 : 0;
   for (const s of SLOTS) {
     const def = CHAMPIONS[lineup[s]];
+    const selfBonus = s === "back" && backLeader === "vitality" ? 10 : 0;
     p.slots[s] = {
-      card: lineup[s], hp: def.hp + hpBonus, maxHp: def.hp + hpBonus, shield: 0, acted: false,
-      used: [], swift: 0, form: false,
+      card: lineup[s], hp: def.hp + hpBonus + selfBonus, maxHp: def.hp + hpBonus + selfBonus, shield: 0, acted: false,
+      used: [], readyAt: {}, swift: 0, form: false,
       marked: false, bleeds: [], link: null, dazed: false,
     };
   }
@@ -255,6 +258,9 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
       log(game, `🎯 Weak spot! Double damage on ${champName(target)}.`);
     }
     if (from === "back" && passiveOf(target).leaderWeakness) amount *= passiveOf(target).leaderWeakness;
+    // Vianoc's passive: extra damage against one class, like frontliners.
+    const vsClass = attacker ? passiveOf(attacker).vsClass : null;
+    if (vsClass && CHAMPIONS[target.card].class === vsClass.class) amount *= vsClass.mult;
     if (isFront && leaderOf(game, targetPid) === "bulwark") amount = Math.max(0, amount - 1);
   }
   amount = round(amount);
@@ -335,6 +341,21 @@ function applyEffect(game, pid, effect, targetType, target, from) {
       }
     }
   }
+  // Sunder: the enemy's leader takes damage too, but only when the leader can be attacked.
+  if (effect.leaderDamage && target.slot !== "back" && game.phase === "playing" && attackableSlots(game, enemy).includes("back") && alive(game, enemy, "back")) {
+    damage(game, pid, enemy, "back", effect.leaderDamage, { from });
+  }
+  // Relentless Thrust: each hit rolls on its own, and the series stops if the champion is knocked out.
+  if (effect.hits && target) {
+    for (const hit of effect.hits) {
+      if (game.phase !== "playing" || !alive(game, enemy, target.slot)) break;
+      if (Math.random() < hit.chance) {
+        damage(game, pid, enemy, target.slot, hit.damage, { from });
+      } else {
+        log(game, `💨 A hit on ${champName(game.players[enemy].slots[target.slot])} missed.`);
+      }
+    }
+  }
   if (effect.drain) {
     damage(game, pid, enemy, target.slot, effect.drain, { from });
     if (game.phase === "playing") heal(game, pid, from, effect.drain);
@@ -378,6 +399,8 @@ function abilityBlock(game, pid, slot, index) {
   const ability = abilitiesOf(champ)[index];
   if (ability.once && champ.used.includes(index)) return "Already used";
   if (ability.effect.transform && champ.form) return "Already transformed";
+  const readyIn = (champ.readyAt[index] || 0) - p.turnsTaken;
+  if (readyIn > 0) return readyIn === 1 ? "Ready next turn" : `Ready in ${readyIn} turns`;
   const req = ability.requires || {};
   if (req.belowHalf && champ.hp >= champ.maxHp / 2) return "Needs under half HP";
   if (req.minTurn && p.turnsTaken < req.minTurn) return `Unlocks on your turn ${req.minTurn}`;
@@ -413,6 +436,8 @@ function useAbility(game, pid, slot, index, target, choice) {
   p.actions--;
   champ.acted = true;
   if (ability.once) champ.used.push(index);
+  // A cooldown of N means the ability sits out the next N of this player's turns.
+  if (ability.cooldown) champ.readyAt[index] = p.turnsTaken + ability.cooldown + 1;
   log(game, `${p.name}'s ${champName(champ)} used ${ability.name}.`);
 
   if (ability.effect.soulLink) {
@@ -501,7 +526,7 @@ function viewFor(game, pid) {
           name: champName(c),
           boostMult: boostOf(game, id, s),
           abilities: abilitiesOf(c).map((a, i) => ({
-            name: a.name, short: a.short, desc: a.desc, target: a.target, effect: a.effect, power: !!a.power,
+            name: a.name, short: a.short, desc: a.desc, target: a.target, effect: a.effect, power: !!a.power, cooldown: a.cooldown || 0,
             blocked: game.phase === "playing" ? abilityBlock(game, id, s, i) : null,
           })),
         };

@@ -10,7 +10,8 @@ A one-versus-one card game you play with friends in the browser.
 - Each player gets action points every turn: 2 at first, and 3 from the starting player's third turn on.
   Each champion can use its ability once per turn. Using an ability or playing a utility card (heals,
   shields, bombs...) costs 1 action point. Unused points are lost at the end of your turn.
-- Utility cards cost no action points while Windfall is active. You draw a card every turn.
+- Many abilities have a cooldown: after use, they wait 1 to 3 turns before they can be used again.
+  Basic attacks have none. Windfall gives 3 action points every turn. You draw a card every turn.
 - Attacks hit the enemy's front champions. When a champion's HP hits 0, that stronghold falls.
 - The back champion can attack, but can't be attacked until one of its front strongholds has fallen.
 - Knock out the enemy leader at the main stronghold to win!

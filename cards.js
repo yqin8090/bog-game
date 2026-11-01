@@ -10,12 +10,16 @@
 //   abilities    - what it can do. Each champion can use its ability once per turn, and each use costs 1 action point.
 //   short        - optional one-line text shown on the card; desc goes in the tooltip
 //   power        - an ability marked power: true is shown as a POWER band, not an attack
-//   passive      - optional: always-on powers, with a name and a description
+//   passive      - optional: always-on powers, with a name and a description. vsClass: { class, mult }
+//                  multiplies the damage this champion deals to champions of that class
 //   form         - optional: a transformation (like Ruhaan turning into Simba)
 //   leader       - a bonus that only works while this champion is at the back
 //
 // Ability fields:
 //   once         - can only be used once per game
+//   cooldown     - turns to wait after using it before it can be used again. 0 means every turn.
+//                  Basic 2-damage attacks use 0, 3 damage or a small effect 1, strong or multi-target 2,
+//                  big team effects 3. Once-per-game powers don't need one
 //   requires     - { belowHalf: true } needs this champion under half HP,
 //                  { minTurn: N } can't be used until your turn N
 //   target:
@@ -43,6 +47,8 @@
 //     allyBoost: N - your other two champions deal N times damage, for the rest of this turn and your next turn.
 //                    Boosts multiply, so two boosts active at once stack
 //     skipTurn     - the enemy skips their next turn
+//     hits: [{ chance, damage }] - a series of hits on one enemy. Each hit rolls its own chance to land
+//     leaderDamage: N - also deal N damage to the enemy's leader, if the leader can be attacked
 
 const CLASSES = {
   frontliner: "🛡️ Frontliner",
@@ -63,6 +69,7 @@ const LEADERS = {
   ironhide: { name: "Ironhide", short: "All champions +2 HP", desc: "While this leader is at the back, all your champions start with 2 more HP." },
   windfall: { name: "Windfall", short: "3 action points every turn", desc: "While this leader is at the back, you have 3 action points every turn, from your first turn." },
   pack: { name: "Pack Rage", short: "Below half HP: 1.5x damage", desc: "While this leader is at the back, your champions below half HP deal 1.5x damage." },
+  vitality: { name: "Vitality", short: "This champion +10 HP", desc: "While this leader is at the back, this champion has 10 more HP." },
 };
 
 const CHAMPIONS = {
@@ -71,7 +78,7 @@ const CHAMPIONS = {
     name: "Ruhaan Uppal", title: "The Pack Brain", class: "warrior", rarity: "holo", hp: 10, art: "🐾",
     image: "cards/ruhaan-card.jpg", credit: "Art: Gemini",
     abilities: [
-      { name: "Neuro Scan", short: "Next hit deals double", target: "anyEnemy", effect: { mark: true }, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
+      { name: "Neuro Scan", short: "Next hit deals double", target: "anyEnemy", effect: { mark: true }, cooldown: 2, desc: "Find an enemy's weakness. The next hit on them deals double damage." },
       { name: "Paw Swipe", short: "2 damage, +1 Swift", target: "enemy", effect: { damage: 2, swift: 1 }, desc: "Dog paws scratch for 2 damage. +1 Swift (10% dodge each, max 3)." },
       {
         name: "Simba Form", short: "+10 HP, 2x dodge", power: true, once: true, target: "none", effect: { transform: true }, requires: { belowHalf: true, minTurn: 5 },
@@ -81,7 +88,7 @@ const CHAMPIONS = {
     form: {
       name: "Simba Form", image: "cards/ruhaan-card.jpg", bonusHp: 10, swiftMultiplier: 2,
       replace: {
-        1: { name: "Wolf Claws", short: "4 damage + bleed", target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
+        1: { name: "Wolf Claws", short: "4 damage + bleed", target: "enemy", effect: { damage: 4, swift: 1, bleed: 0.4 }, cooldown: 2, desc: "Wolf claws deal 4 damage and cause bleed (0.4 a turn for 3 turns). +1 Swift." },
       },
     },
     leader: "pack",
@@ -94,8 +101,8 @@ const CHAMPIONS = {
       desc: "Heals 50% of damage he deals, and can heal past max HP. Takes 1.5x damage from the enemy leader.",
     },
     abilities: [
-      { name: "Scythe Slice", short: "4 to both enemy fronts", target: "enemyFront", effect: { damage: 4 }, desc: "Swing across the board: 4 damage to both enemy front champions." },
-      { name: "Soul Link", short: "Guess a side to link", target: "anyEnemy", effect: { soulLink: 2 }, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
+      { name: "Scythe Slice", short: "4 to both enemy fronts", target: "enemyFront", effect: { damage: 4 }, cooldown: 2, desc: "Swing across the board: 4 damage to both enemy front champions." },
+      { name: "Soul Link", short: "Guess a side to link", target: "anyEnemy", effect: { soulLink: 2 }, cooldown: 2, desc: "Pick any enemy and play Left or Right. If they pick the same side, they're linked and take 2 damage every turn." },
     ],
     leader: "thorns",
   },
@@ -105,9 +112,9 @@ const CHAMPIONS = {
     image: "cards/matthew-card.jpg", credit: "Art: Gemini",
     abilities: [
       { name: "Punch", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-      { name: "Brace", short: "2 shield to both fronts", target: "none", effect: { frontShield: 2 }, desc: "Give both of your front champions a 2 shield." },
-      { name: "Grand Slam", short: "4 damage, 40% to daze", target: "enemy", effect: { damage: 4, daze: 0.4 }, desc: "Deal 4 damage. 40% chance to daze the enemy, who can't act next turn." },
-      { name: "Iron Wall", short: "5 shield to the whole team", target: "none", effect: { teamShield: 5 }, desc: "Give every champion on your team a 5 shield." },
+      { name: "Brace", short: "2 shield to both fronts", target: "none", effect: { frontShield: 2 }, cooldown: 1, desc: "Give both of your front champions a 2 shield." },
+      { name: "Grand Slam", short: "4 damage, 40% to daze", target: "enemy", effect: { damage: 4, daze: 0.4 }, cooldown: 2, desc: "Deal 4 damage. 40% chance to daze the enemy, who can't act next turn." },
+      { name: "Iron Wall", short: "5 shield to the whole team", target: "none", effect: { teamShield: 5 }, cooldown: 3, desc: "Give every champion on your team a 5 shield." },
     ],
     leader: "ironhide",
   },
@@ -115,20 +122,37 @@ const CHAMPIONS = {
     name: "Ted Wang", title: "The Windcaller", class: "support", rarity: "holo", hp: 15, art: "🌬️",
     image: "cards/ted-card.jpg", credit: "Art: Gemini",
     abilities: [
-      { name: "Gale Lunge", short: "2 damage, 10% to daze", target: "enemy", effect: { damage: 2, daze: 0.1 }, desc: "Deal 2 damage. 10% chance to daze the enemy, who can't act next turn." },
-      { name: "Tailwind", short: "Other two champions deal 1.5x", target: "none", effect: { allyBoost: 1.5 }, desc: "Your other two champions deal 1.5x damage for the rest of this turn and your next turn." },
-      { name: "Gust", short: "3 shield to all, others 2x", target: "none", effect: { teamShield: 3, allyBoost: 2 }, desc: "Give every champion on your team a 3 shield. Your other two champions deal 2x damage for the rest of this turn and your next turn. Stacks with Tailwind." },
+      { name: "Gale Lunge", short: "2 damage, 10% to daze", target: "enemy", effect: { damage: 2, daze: 0.1 }, cooldown: 1, desc: "Deal 2 damage. 10% chance to daze the enemy, who can't act next turn." },
+      { name: "Tailwind", short: "Other two champions deal 1.5x", target: "none", effect: { allyBoost: 1.5 }, cooldown: 2, desc: "Your other two champions deal 1.5x damage for the rest of this turn and your next turn." },
+      { name: "Gust", short: "3 shield to all, others 2x", target: "none", effect: { teamShield: 3, allyBoost: 2 }, cooldown: 3, desc: "Give every champion on your team a 3 shield. Your other two champions deal 2x damage for the rest of this turn and your next turn. Stacks with Tailwind." },
       { name: "Wind version of turning tide", short: "Enemy skips their next turn", power: true, once: true, target: "none", effect: { skipTurn: true }, desc: "Once per game. The enemy skips their next turn." },
     ],
     leader: "windfall",
+  },
+  vianoc: {
+    name: "Vianoc", title: "The Spearman", class: "warrior", rarity: "holo", hp: 20, art: "🔱",
+    abilities: [
+      { name: "Pierce", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
+      { name: "Sunder", short: "3 damage, 3 to their leader", target: "enemy", effect: { damage: 3, leaderDamage: 3 }, cooldown: 2, desc: "Deal 3 damage to an enemy champion and 3 damage to their leader. The leader only takes it if it can be attacked." },
+      {
+        name: "Relentless Thrust", short: "Three hits: 2, 3 and 4 damage", target: "enemy",
+        effect: { hits: [{ chance: 1, damage: 2 }, { chance: 0.5, damage: 3 }, { chance: 0.2, damage: 4 }] }, cooldown: 2,
+        desc: "Three hits on one enemy champion. The first deals 2 damage and always lands. The second deals 3 damage with a 50% chance. The third deals 4 damage with a 20% chance.",
+      },
+    ],
+    passive: {
+      name: "Front Breaker", short: "2x damage to frontliners", vsClass: { class: "frontliner", mult: 2 },
+      desc: "Deals 2x damage to frontliner champions.",
+    },
+    leader: "vitality",
   },
 
   // ---------- Made-up champions (replace with more friends!) ----------
   blaze: {
     name: "Blaze", title: "The Firestarter", class: "ranger", rarity: "common", hp: 12, art: "🔥",
     abilities: [
-      { name: "Fireball", target: "enemy", effect: { damage: 4 }, desc: "Deal 4 damage." },
-      { name: "Inferno", short: "2 damage to each enemy", target: "allEnemies", effect: { damage: 2 }, desc: "Deal 2 damage to every enemy you can attack." },
+      { name: "Fireball", target: "enemy", effect: { damage: 4 }, cooldown: 1, desc: "Deal 4 damage." },
+      { name: "Inferno", short: "2 damage to each enemy", target: "allEnemies", effect: { damage: 2 }, cooldown: 2, desc: "Deal 2 damage to every enemy you can attack." },
     ],
     leader: "rally",
   },
@@ -136,14 +160,14 @@ const CHAMPIONS = {
     name: "Ironwall", title: "The Unbreakable", class: "frontliner", rarity: "common", hp: 16, art: "🛡️",
     abilities: [
       { name: "Bash", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
-      { name: "Guard", target: "ally", effect: { shield: 4 }, desc: "Give a champion a 4 shield." },
+      { name: "Guard", target: "ally", effect: { shield: 4 }, cooldown: 1, desc: "Give a champion a 4 shield." },
     ],
     leader: "bulwark",
   },
   sage: {
     name: "Sage", title: "The Healer", class: "support", rarity: "common", hp: 11, art: "🌿",
     abilities: [
-      { name: "Mend", target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4." },
+      { name: "Mend", target: "ally", effect: { heal: 4 }, cooldown: 1, desc: "Heal a champion 4." },
       { name: "Zap", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "fortify",
@@ -151,7 +175,7 @@ const CHAMPIONS = {
   shade: {
     name: "Shade", title: "The Shadow", class: "assassin", rarity: "common", hp: 10, art: "🗡️",
     abilities: [
-      { name: "Backstab", target: "enemy", effect: { damage: 5 }, desc: "Deal 5 damage." },
+      { name: "Backstab", target: "enemy", effect: { damage: 5 }, cooldown: 2, desc: "Deal 5 damage." },
       { name: "Jab", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "thorns",
@@ -159,7 +183,7 @@ const CHAMPIONS = {
   spark: {
     name: "Spark", title: "The Storm", class: "ranger", rarity: "common", hp: 12, art: "⚡",
     abilities: [
-      { name: "Chain Lightning", short: "3 damage to each enemy", target: "allEnemies", effect: { damage: 3 }, desc: "Deal 3 damage to every enemy you can attack." },
+      { name: "Chain Lightning", short: "3 damage to each enemy", target: "allEnemies", effect: { damage: 3 }, cooldown: 2, desc: "Deal 3 damage to every enemy you can attack." },
       { name: "Static", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "haste",
@@ -167,7 +191,7 @@ const CHAMPIONS = {
   brute: {
     name: "Brute", title: "The Wrecking Ball", class: "warrior", rarity: "common", hp: 14, art: "👊",
     abilities: [
-      { name: "Smash", target: "enemy", effect: { damage: 6 }, desc: "Deal 6 damage." },
+      { name: "Smash", target: "enemy", effect: { damage: 6 }, cooldown: 2, desc: "Deal 6 damage." },
       { name: "Punch", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "thorns",
@@ -175,7 +199,7 @@ const CHAMPIONS = {
   leech: {
     name: "Leech", title: "The Thirsty", class: "assassin", rarity: "common", hp: 12, art: "🦇",
     abilities: [
-      { name: "Drain", target: "enemy", effect: { drain: 3 }, desc: "Deal 3 damage and heal Leech 3." },
+      { name: "Drain", target: "enemy", effect: { drain: 3 }, cooldown: 1, desc: "Deal 3 damage and heal Leech 3." },
       { name: "Bite", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage." },
     ],
     leader: "lifeline",
@@ -183,8 +207,8 @@ const CHAMPIONS = {
   oracle: {
     name: "Oracle", title: "The Seer", class: "support", rarity: "common", hp: 11, art: "🔮",
     abilities: [
-      { name: "Foresight", target: "none", effect: { draw: 1 }, desc: "Draw a utility card." },
-      { name: "Bolt", target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage." },
+      { name: "Foresight", target: "none", effect: { draw: 1 }, cooldown: 1, desc: "Draw a utility card." },
+      { name: "Bolt", target: "enemy", effect: { damage: 3 }, cooldown: 1, desc: "Deal 3 damage." },
     ],
     leader: "scholar",
   },

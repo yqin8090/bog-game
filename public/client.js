@@ -110,7 +110,7 @@ function champInfo(id) {
   const c = CARDS.CHAMPIONS[id];
   const leader = CARDS.LEADERS[c.leader];
   const abilities = c.abilities
-    .map((a) => `<li><b>${esc(a.name)}</b> (${a.power ? "once per game" : "once per turn"}, 1 action point): ${esc(a.desc)}</li>`)
+    .map((a) => `<li><b>${esc(a.name)}</b> (${CardView.timingText(a)}): ${esc(a.desc)}</li>`)
     .join("");
   return `
     <p class="hint">${esc(CARDS.CLASSES[c.class])}, ${c.hp} HP</p>
@@ -282,7 +282,8 @@ function renderGame() {
       const b = document.createElement("button");
       b.className = "ability";
       const noAction = me.actionsLeft < 1;
-      b.innerHTML = `<b>${esc(a.name)}</b> <small>${esc(a.blocked || (noAction ? "No action points left" : "1 action point"))}</small><span>${esc(a.desc)}</span>`;
+      const cost = a.cooldown ? `1 action point, cooldown ${a.cooldown} turn${a.cooldown > 1 ? "s" : ""}` : "1 action point";
+      b.innerHTML = `<b>${esc(a.name)}</b> <small>${esc(a.blocked || (noAction ? "No action points left" : cost))}</small><span>${esc(a.desc)}</span>`;
       b.disabled = !!a.blocked || noAction;
       if (selected.kind === "ability" && selected.index === index) b.classList.add("chosen");
       b.onclick = () => {

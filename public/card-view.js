@@ -16,14 +16,23 @@ const CardView = (() => {
     if (effect.shield) return `🔰${effect.shield}`;
     if (effect.frontShield || effect.teamShield) return `🔰${effect.frontShield || effect.teamShield}`;
     if (effect.allyBoost) return `×${effect.allyBoost}`;
+    if (effect.hits) return effect.hits.map((h) => h.damage).join("·");
     return "";
   }
 
+  // How often an ability can be used, for tooltips and the guide. Cooldown is the turns it waits after use.
+  function timingText(a) {
+    const when = a.power ? "once per game" : "once per turn";
+    const cooldown = a.cooldown ? `, cooldown ${a.cooldown} turn${a.cooldown > 1 ? "s" : ""}` : "";
+    return `${when}, 1 action point${cooldown}`;
+  }
+
   function attackHtml(a) {
+    const cooldown = a.cooldown ? ` <i class="tcg-cd" title="${esc(timingText(a))}">CD ${a.cooldown}</i>` : "";
     return `
       <div class="tcg-atk${a.blocked ? " off" : ""}" title="${esc(a.desc)}">
         <div class="tcg-atk-main">
-          <div class="tcg-atk-line"><b>${esc(a.name)}</b><span class="tcg-dmg">${esc(damageText(a.effect))}</span></div>
+          <div class="tcg-atk-line"><span class="tcg-atk-name"><b>${esc(a.name)}</b>${cooldown}</span><span class="tcg-dmg">${esc(damageText(a.effect))}</span></div>
           <div class="tcg-atk-desc">${esc(a.short || a.desc)}</div>
         </div>
       </div>`;
@@ -76,7 +85,7 @@ const CardView = (() => {
       .filter(Boolean)
       .join(" ");
     el.title = [
-      ...abilities.map((a) => `${a.name} (${a.power ? "once per game" : "once per turn"}, 1 action point): ${a.desc}`),
+      ...abilities.map((a) => `${a.name} (${timingText(a)}): ${a.desc}`),
       c.passive && `${c.passive.name}: ${c.passive.desc}`,
       `Leader, ${leader.name}: ${leader.desc}`,
     ]
@@ -132,5 +141,5 @@ const CardView = (() => {
     card.style.removeProperty("--ry");
   });
 
-  return { render };
+  return { render, timingText };
 })();

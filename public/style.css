@@ -175,6 +175,8 @@ p { margin: 0; }
 .tcg-atk.off { opacity: 0.45; }
 .tcg-atk-main { flex: 1; min-width: 0; }
 .tcg-atk-line { display: flex; justify-content: space-between; align-items: baseline; gap: 2cqw; }
+.tcg-atk-name { display: flex; align-items: baseline; gap: 1.5cqw; min-width: 0; }
+.tcg-cd { flex: none; font-style: normal; font-size: max(6px, 2.8cqw); font-weight: 800; letter-spacing: 0.06em; color: var(--glow); opacity: 0.9; text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.9); }
 .tcg-atk-line b {
   font-size: max(8px, 5.2cqw);
   font-weight: 900;
