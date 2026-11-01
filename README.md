@@ -5,7 +5,7 @@ A one-versus-one card game you play with friends in the browser.
 ## How to play
 
 - Each player has three strongholds: two at the front and one at the back (the main stronghold).
-- At the start you're offered 4 champions. Pick 3 and place one at each stronghold.
+- At the start you're offered 3 champions that no other player is offered. Place all three at your strongholds.
   The champion at the back is your **leader**: their leader ability is active while they stand.
 - Each player gets action points every turn: 2 at first, and 3 from the starting player's third turn on.
   Each champion can use its ability once per turn. Using an ability or playing a utility card (heals,

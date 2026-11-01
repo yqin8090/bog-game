@@ -9,7 +9,7 @@ const FRONT = ["left", "right"];
 const SLOT_NAMES = { left: "left stronghold", right: "right stronghold", back: "main stronghold" };
 const STARTING_HAND = 3;
 const MAX_HAND = 7;
-const CHAMPIONS_OFFERED = 4;
+const CHAMPIONS_OFFERED = 3;
 const MAX_SWIFT = 3;
 const BLEED_TURNS = 3;
 const MAX_SHIELD = 6;
@@ -39,8 +39,9 @@ function buildDeck() {
 }
 
 function createGame(players) {
-  // Each player is offered a random set of champions and picks 3 of them. With few champions, offers can overlap.
-  const roster = Object.keys(CHAMPIONS);
+  // Shuffle the champions once, then give each player their own group, so no two offers share a champion.
+  // With six champions and two players, each player is offered three and takes all three.
+  const roster = shuffle(Object.keys(CHAMPIONS));
   const game = {
     phase: "setup", // "setup" -> "playing" -> "over"
     order: players.map((p) => p.id),
@@ -54,11 +55,11 @@ function createGame(players) {
     log: [],
     events: [],
   };
-  players.forEach((p) => {
+  players.forEach((p, i) => {
     game.players[p.id] = {
       id: p.id,
       name: p.name,
-      offered: shuffle(roster).slice(0, CHAMPIONS_OFFERED),
+      offered: roster.slice(i * CHAMPIONS_OFFERED, (i + 1) * CHAMPIONS_OFFERED),
       slots: null, // { left, right, back } once chosen
       hand: [],
       deck: buildDeck(),
