@@ -168,13 +168,13 @@ const CHAMPIONS = {
 
 // UTILITY cards are played from your hand. Each one costs 1 action point. "count" is how many are in each player's deck.
 const UTILITIES = {
-  potion: { name: "Potion", target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4.", art: "🧪", count: 4 },
-  bigPotion: { name: "Big Potion", target: "ally", effect: { heal: 7 }, desc: "Heal a champion 7.", art: "⚗️", count: 2 },
-  shield: { name: "Shield", target: "ally", effect: { shield: 3 }, desc: "Give a champion a 3 shield.", art: "🔰", count: 3 },
-  bomb: { name: "Bomb", target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage.", art: "💣", count: 3 },
-  fireArrow: { name: "Fire Arrow", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage.", art: "🏹", count: 4 },
-  energyDrink: { name: "Energy Drink", target: "none", effect: { actionPoint: 2 }, desc: "Gain 2 action points this turn.", art: "🥤", count: 2 },
-  secondWind: { name: "Second Wind", target: "ally", effect: { refresh: true }, desc: "A champion that already acted can act again.", art: "💨", count: 2 },
+  potion: { name: "Potion", target: "ally", effect: { heal: 4 }, desc: "Heal a champion 4.", art: "药", count: 4 },
+  bigPotion: { name: "Big Potion", target: "ally", effect: { heal: 7 }, desc: "Heal a champion 7.", art: "圣", count: 2 },
+  shield: { name: "Shield", target: "ally", effect: { shield: 3 }, desc: "Give a champion a 3 shield.", art: "盾", count: 3 },
+  bomb: { name: "Bomb", target: "enemy", effect: { damage: 3 }, desc: "Deal 3 damage.", art: "炮", count: 3 },
+  fireArrow: { name: "Fire Arrow", target: "enemy", effect: { damage: 2 }, desc: "Deal 2 damage.", art: "箭", count: 4 },
+  energyDrink: { name: "Energy Drink", target: "none", effect: { actionPoint: 2 }, desc: "Gain 2 action points this turn.", art: "能", count: 2 },
+  secondWind: { name: "Second Wind", target: "ally", effect: { refresh: true }, desc: "A champion that already acted can act again.", art: "风", count: 2 },
 };
 
 // Pictures behind the board. The server picks one at random for each game.
