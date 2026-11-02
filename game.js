@@ -155,7 +155,7 @@ function chooseLineup(game, pid, lineup) {
     p.slots[s] = {
       card: lineup[s], hp: def.hp + hpBonus + selfBonus, maxHp: def.hp + hpBonus + selfBonus, shield: 0, acted: false,
       used: [], readyAt: {}, swift: 0, form: false, respawned: false,
-      marked: false, bleeds: [], link: null, dazed: false,
+      marked: false, bleeds: [], link: null, dazed: false, dodging: false,
     };
   }
   if (game.order.every((id) => game.players[id].slots)) startPlaying(game);
@@ -185,6 +185,7 @@ function startTurn(game, pid) {
   for (const s of SLOTS) {
     const c = p.slots[s];
     c.acted = !!c.dazed; // a dazed champion sits this turn out
+    c.dodging = false; // Fly Up lasts until the owner's next turn starts
   }
 
   // Bleeding champions lose HP at the start of their own turn.
@@ -250,6 +251,13 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
       log(game, `💨 ${champName(target)} dodged!`);
       return 0;
     }
+    // Fly Up: the next attack on this champion misses.
+    if (target.dodging) {
+      target.dodging = false;
+      game.events.push({ type: "dodge", owner: targetPid, slot });
+      log(game, `🪽 ${champName(target)} flew out of the way!`);
+      return 0;
+    }
     if (from && leaderOf(game, attackerPid) === "rally") amount += 1;
     if (from && leaderOf(game, attackerPid) === "pack" && attacker.hp < attacker.maxHp / 2) amount *= 1.5;
     if (from) amount *= boostOf(game, attackerPid, from);
@@ -262,6 +270,12 @@ function damage(game, attackerPid, targetPid, slot, amount, { from = null, direc
     // Vianoc's passive: extra damage against one class, like frontliners.
     const vsClass = attacker ? passiveOf(attacker).vsClass : null;
     if (vsClass && CHAMPIONS[target.card].class === vsClass.class) amount *= vsClass.mult;
+    // Alai's passive: the lower its HP, the harder it hits. The highest tier that applies is used.
+    if (attacker && passiveOf(attacker).lowHp) {
+      let mult = 1;
+      for (const t of passiveOf(attacker).lowHp) if (attacker.hp < t.below) mult = Math.max(mult, t.mult);
+      amount *= mult;
+    }
     if (isFront && leaderOf(game, targetPid) === "bulwark") amount = Math.max(0, amount - 1);
   }
   amount = round(amount);
@@ -343,6 +357,7 @@ function applyEffect(game, pid, effect, targetType, target, from) {
       const dealt = damage(game, pid, enemy, s, effect.damage, { from });
       if (effect.bleed && dealt > 0 && alive(game, enemy, s)) {
         game.players[enemy].slots[s].bleeds.push({ amount: effect.bleed, turns: BLEED_TURNS });
+        log(game, `🔥 ${champName(game.players[enemy].slots[s])} catches fire.`);
       }
       if (effect.daze && alive(game, enemy, s) && Math.random() < effect.daze) {
         game.players[enemy].slots[s].dazed = true;
@@ -371,6 +386,19 @@ function applyEffect(game, pid, effect, targetType, target, from) {
     if (game.phase === "playing") heal(game, pid, from, effect.drain);
   }
   if (effect.swift && self) self.swift = Math.min(MAX_SWIFT, self.swift + effect.swift);
+  // Torching Wave: every enemy champion catches fire, including the leader even when it can't be attacked.
+  if (effect.burn) {
+    for (const s of SLOTS) {
+      if (!alive(game, enemy, s)) continue;
+      game.players[enemy].slots[s].bleeds.push({ amount: effect.burn, turns: BLEED_TURNS });
+    }
+    log(game, `🔥 ${p.name}'s fire spreads to every enemy champion.`);
+  }
+  // Fly Up: this champion dodges the next attack on it.
+  if (effect.dodge && self) {
+    self.dodging = true;
+    log(game, `🪽 ${CHAMPIONS[self.card].name} flies up and will dodge the next attack.`);
+  }
   if (effect.mark) {
     game.players[enemy].slots[target.slot].marked = true;
     game.events.push({ type: "mark", owner: enemy, slot: target.slot });

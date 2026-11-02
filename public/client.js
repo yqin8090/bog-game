@@ -402,7 +402,7 @@ function playEvents(events) {
     const el = cardEl(e.owner, e.slot);
     if (!el) continue;
     if (e.type === "damage") {
-      const icon = { bleed: "🩸", link: "⛓️", storm: "⏳" }[e.reason] || "";
+      const icon = { bleed: "🔥", link: "⛓️", storm: "⏳" }[e.reason] || "";
       popText(el, `${icon}-${fmt(e.amount)}${e.blocked ? ` (🔰${fmt(e.blocked)})` : ""}`, "damage");
       el.classList.add("hit");
     } else if (e.type === "heal") popText(el, `+${fmt(e.amount)}`, "heal");

@@ -55,7 +55,8 @@ const CardView = (() => {
     if (state.marked) pills.push(`<span class="bad" title="The next hit deals double damage">🎯 x2</span>`);
     if (state.dazed) pills.push(`<span class="bad" title="Can't act this turn">💫 dazed</span>`);
     if (state.boostMult > 1) pills.push(`<span title="Deals more damage this turn">💨 ×${fmt(state.boostMult)}</span>`);
-    if (state.bleeds && state.bleeds.length) pills.push(`<span class="bad" title="Loses HP every turn">🩸 bleed</span>`);
+    if (state.bleeds && state.bleeds.length) pills.push(`<span class="bad" title="Loses HP every turn">🔥 burn</span>`);
+    if (state.dodging) pills.push(`<span title="The next attack on this champion misses">🪽 dodge</span>`);
     if (linked) pills.push(`<span class="bad" title="Takes damage every turn">⛓️ linked</span>`);
     if (state.link) pills.push(`<span title="Soul Link is on">⛓️ linking</span>`);
     return pills.length ? `<div class="tcg-badges">${pills.join("")}</div>` : "";

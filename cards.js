@@ -163,6 +163,21 @@ const CHAMPIONS = {
     },
     leader: "haste",
   },
+  alai: {
+    name: "Alai", title: "The Pyromancer", class: "warrior", rarity: "holo", hp: 15, art: "🔥",
+    image: "cards/alai-card.jpg", credit: "Art: Gemini",
+    abilities: [
+      { name: "Fireball", short: "3 damage, then burn", target: "enemy", effect: { damage: 3, bleed: 1 }, cooldown: 1, desc: "Deal 3 damage. The champion catches fire and takes 1 damage at the start of its owner's turn, for 3 turns." },
+      { name: "Fly Up", short: "Dodge the next attack", target: "none", effect: { dodge: true }, cooldown: 2, desc: "Fly up. The next attack on this champion misses." },
+      { name: "Torching Wave", short: "Burn every enemy, leader too", target: "none", effect: { burn: 1 }, cooldown: 2, desc: "Every enemy champion catches fire and takes 1 damage at the start of its owner's turn, for 3 turns. This includes their leader, even when it can't be attacked." },
+      { name: "Inferno Ball", short: "5 damage", target: "enemy", effect: { damage: 5 }, cooldown: 2, desc: "Hurl a huge fireball for 5 damage." },
+    ],
+    passive: {
+      name: "Lower HP, More Damage", short: "Under 10 HP: x2. Under 5 HP: x3", lowHp: [{ below: 10, mult: 2 }, { below: 5, mult: 3 }],
+      desc: "While this champion has under 10 HP, its attacks deal double damage. Under 5 HP, they deal triple damage.",
+    },
+    leader: "rally",
+  },
 
 };
 

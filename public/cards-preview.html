@@ -23,7 +23,7 @@
       .then((r) => r.json())
       .then((defs) => {
         const gallery = document.getElementById("gallery");
-        const friends = ["ruhaan", "abbas", "matthew", "ted", "vianoc", "carlos"];
+        const friends = ["ruhaan", "abbas", "matthew", "ted", "vianoc", "carlos", "alai"];
         const others = Object.keys(defs.CHAMPIONS).filter((id) => !friends.includes(id));
         for (const id of [...friends, ...others]) {
           gallery.appendChild(CardView.render(defs, id, null, { isLeader: true }));
