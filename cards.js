@@ -165,7 +165,7 @@ const CHAMPIONS = {
   },
   alai: {
     name: "Alai", title: "The Pyromancer", class: "warrior", rarity: "holo", hp: 15, art: "🔥",
-    image: "cards/alai-card.jpg", credit: "Art: Gemini",
+    image: "cards/alai-card.jpg", artShift: 8, credit: "Art: Gemini",
     abilities: [
       { name: "Fireball", short: "3 damage, then burn", target: "enemy", effect: { damage: 3, bleed: 1 }, cooldown: 1, desc: "Deal 3 damage. The champion catches fire and takes 1 damage at the start of its owner's turn, for 3 turns." },
       { name: "Fly Up", short: "Dodge the next attack", target: "none", effect: { dodge: true }, cooldown: 2, desc: "Fly up. The next attack on this champion misses." },
